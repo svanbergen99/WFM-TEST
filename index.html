@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>WFM Bridge Test</title>
+  <style>
+    :root{font-family:Arial,Helvetica,sans-serif;color:#172033;background:#f3f5f8}
+    *{box-sizing:border-box}body{margin:0;padding:32px 16px}.wrap{max-width:980px;margin:auto}.card{background:#fff;border:1px solid #dbe2ea;border-radius:18px;padding:22px;box-shadow:0 12px 35px rgba(15,23,42,.08);margin-bottom:16px}h1,h2{margin-top:0}button{border:0;border-radius:10px;padding:12px 16px;background:#5b4bc4;color:#fff;font-weight:700;cursor:pointer}.status{padding:12px 14px;border-radius:10px;background:#eef2ff;margin:12px 0}.ok{background:#e9f8ef;color:#216a43}.bad{background:#fdecec;color:#8b3030}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}.stat{padding:12px;border-radius:10px;background:#f5f6fa}.stat b{display:block;font-size:22px}.schedule{border:1px solid #e4e7ec;border-radius:10px;overflow:hidden;margin:9px 0}.head{padding:8px 10px;background:#f7f8fa;font-weight:700}.act{padding:7px 10px;border-top:1px solid #eceef2;font-size:14px}details{margin-top:14px}pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;padding:12px;border-radius:10px;max-height:420px;overflow:auto}@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <section class="card">
+    <h1>WFM Bridge Test</h1>
+    <p>Deze pagina is alleen bedoeld om de WFM → browserbridge te testen. Er wordt niets naar een roosterbestand geschreven.</p>
+    <button id="openWfm" type="button">WFM Login openen</button>
+    <div id="status" class="status">Receiver staat klaar en wacht op een WFM-scan.</div>
+  </section>
+  <section id="result" class="card" hidden></section>
+</div>
+<script>
+(() => {
+  'use strict';
+  const WFM_ORIGIN = 'https://genesyswfm.hosting.corp';
+  const WFM_URL = `${WFM_ORIGIN}/wfm/Login.jsp`;
+  const STORAGE_KEY = 'wfm-test-last-live-scan';
+  const status = document.getElementById('status');
+  const result = document.getElementById('result');
+  const openButton = document.getElementById('openWfm');
+  window.name = 'wfmTestReceiver';
+
+  function esc(v){return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function countActivities(schedules){return schedules.reduce((n,d)=>n+(Array.isArray(d.activities)?d.activities.length:0),0);}
+  function spanDays(first,last){if(!first||!last)return 0;return Math.round((new Date(last+'T12:00:00')-new Date(first+'T12:00:00'))/86400000)+1;}
+  function render(message){
+    const payload = message?.payload || {};
+    const schedules = Array.isArray(payload.schedules) ? payload.schedules.slice() : [];
+    schedules.sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||String(a.start||'').localeCompare(String(b.start||'')));
+    const dates=[...new Set(schedules.map(x=>String(x.date||'').slice(0,10)).filter(Boolean))].sort();
+    const first=dates[0]||'';
+    const last=dates.at(-1)||'';
+    const activities=countActivities(schedules);
+    result.hidden=false;
+    result.innerHTML=`
+      <h2>WFM LIVE SCAN ONTVANGEN ✅</h2>
+      <div class="stats">
+        <div class="stat"><b>${dates.length}</b>unieke datums</div>
+        <div class="stat"><b>${spanDays(first,last)}</b>kalenderdagen</div>
+        <div class="stat"><b>${schedules.length}</b>roosterregels</div>
+        <div class="stat"><b>${activities}</b>activiteiten</div>
+      </div>
+      <div class="status ok">Periode: <b>${esc(first||'—')}</b> t/m <b>${esc(last||'—')}</b><br>Ontvangen: ${esc(new Date().toLocaleTimeString('nl-NL'))}</div>
+      <div>${schedules.map(d=>`<div class="schedule"><div class="head">${esc(d.date)} · ${esc(d.start)}–${esc(d.end)}</div>${(d.activities||[]).map(a=>`<div class="act">${esc(a.start)}–${esc(a.end)} · ${esc(a.name||a.type||'Activiteit')}</div>`).join('')}</div>`).join('')}</div>
+      <details><summary>Ruwe ontvangen JSON</summary><pre>${esc(JSON.stringify(message,null,2))}</pre></details>`;
+  }
+
+  openButton.addEventListener('click', () => {
+    status.className='status';
+    status.textContent='WFM is geopend. Receiver blijft hier wachten op de scan.';
+    const w=window.open(WFM_URL,'wfmLiveTestWindow');
+    try{w?.focus();}catch(_){ }
+    if(!w){status.className='status bad';status.textContent='WFM-venster werd door de browser geblokkeerd.';}
+  });
+
+  window.addEventListener('message', event => {
+    if(event.origin !== WFM_ORIGIN) return;
+    const data=event.data;
+    if(!data || data.type !== 'wfm-live-scan' || !Array.isArray(data?.payload?.schedules)) return;
+    try{sessionStorage.setItem(STORAGE_KEY,JSON.stringify(data));}catch(_){ }
+    status.className='status ok';
+    status.textContent='WFM-scan ontvangen. De bridge werkt.';
+    render(data);
+    try{event.source?.postMessage({type:'wfm-live-ack',receivedAt:new Date().toISOString()},WFM_ORIGIN);}catch(_){ }
+  });
+
+  try{
+    const previous=JSON.parse(sessionStorage.getItem(STORAGE_KEY)||'null');
+    if(previous?.payload?.schedules){status.className='status ok';status.textContent='Laatste WFM-testscan uit deze browsersessie geladen.';render(previous);}
+  }catch(_){ }
+})();
+</script>
+</body>
+</html>
