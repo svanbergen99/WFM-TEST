@@ -1,34 +1,47 @@
 #Requires AutoHotkey v2.0
-#SingleInstance Force
+#SingleInstance Off
 Persistent
 
-; WFM-TEST - page button -> WFM scan helper
-; v9: geen venstertitel-signaal meer vanaf de webpagina.
-; De vaste Rooster ophalen-knop kopieert een korte marker naar het klembord.
-; Deze helper ziet die marker, gebruikt een reeds gevonden Genesys WFM-venster
-; en start daarin de bestaande 6-weeks scanner.
+; WFM Bridge v11
+; Dezelfde bestaande AHK-bridge/scanner, maar nu ook rechtstreeks startbaar via:
+;   wfmbridge://ping
+;   wfmbridge://scan?team=KCD%20Team%203
+;
+; De website hoeft de helper daardoor niet vooraf open te hebben.
 
 SCANNER_URLS := [
     "https://svanbergen99.github.io/WFM-TEST/WFM-Planning-Scan-Send-Bookmarklet.txt",
     "https://raw.githubusercontent.com/svanbergen99/WFM-TEST/main/WFM-Planning-Scan-Send-Bookmarklet.txt"
 ]
 
-REQUEST_MARKER := "WFM_SCAN_REQUEST_KCD_TEAM_3_V9"
-HELPER_VERSION := "v9 clipboard"
+HELPER_VERSION := "v11 protocol"
 
 global ScannerUrls := SCANNER_URLS
-global RequestMarker := REQUEST_MARKER
 global HelperVersion := HELPER_VERSION
-
-global WfmHwnd := 0
 global ScanBusy := false
 global HelperGui := 0
 global HelperStatus := 0
 
-global LastWfmTitle := ""
+; Als Windows ons via het geregistreerde wfmbridge:// protocol start,
+; verwerken we de opdracht meteen en sluiten we daarna weer af.
+if (A_Args.Length >= 1) {
+    uri := StrLower(A_Args[1])
 
+    if InStr(uri, "wfmbridge://ping") {
+        MsgBox("installatie geslaagd", "WFM Bridge")
+        ExitApp()
+    }
+
+    if InStr(uri, "wfmbridge://scan") {
+        SetTimer(() => StartScan(true), -180)
+        return
+    }
+}
+
+; Alleen wanneer het .ahk-bestand handmatig wordt gestart tonen we nog een
+; klein diagnosevenster. Dit is niet nodig voor normaal gebruik via de pagina.
 BuildHelper()
-SetTimer(MonitorBridge, 150)
+SetTimer(MonitorWfm, 300)
 
 BuildHelper() {
     global HelperGui, HelperStatus, HelperVersion
@@ -36,63 +49,25 @@ BuildHelper() {
     HelperGui := Gui("+AlwaysOnTop +ToolWindow -MaximizeBox -MinimizeBox", "WFM Bridge Helper " HelperVersion)
     HelperGui.MarginX := 10
     HelperGui.MarginY := 10
-
     HelperGui.SetFont("s9 Bold", "Segoe UI")
-    HelperStatus := HelperGui.AddText("w290 Center", "v9 helper actief - WFM zoeken...")
-
+    HelperStatus := HelperGui.AddText("w300 Center", "WFM zoeken...")
     HelperGui.SetFont("s8 Norm", "Segoe UI")
-    btn := HelperGui.AddButton("xm w290 h34", "SCAN WFM NU (test/fallback)")
-    btn.OnEvent("Click", ManualScan)
-
-    HelperGui.AddText("xm w290 Center c666666", "Laat dit venster tijdens de test open staan")
+    btn := HelperGui.AddButton("xm w300 h36", "SCAN WFM NU (test/fallback)")
+    btn.OnEvent("Click", (*) => StartScan(false))
+    HelperGui.AddText("xm w300 Center c666666", "Normaal start Rooster ophalen deze bridge automatisch")
     HelperGui.OnEvent("Close", (*) => ExitApp())
     HelperGui.Show("AutoSize")
 }
 
-MonitorBridge(*) {
-    global WfmHwnd, ScanBusy, RequestMarker, HelperStatus, LastWfmTitle
-
-    candidate := FindWfmWindow()
-    if candidate {
-        WfmHwnd := candidate
-        try title := WinGetTitle("ahk_id " candidate)
-        catch title := "Genesys WFM"
-        LastWfmTitle := title
-        if !ScanBusy
-            try HelperStatus.Text := "WFM GEVONDEN - klaar om te scannen"
-    } else if !ScanBusy {
-        WfmHwnd := 0
-        LastWfmTitle := ""
-        try HelperStatus.Text := "WFM NIET gevonden"
-    }
-
+MonitorWfm(*) {
+    global HelperStatus, ScanBusy
     if ScanBusy
         return
-
-    try clip := A_Clipboard
-    catch clip := ""
-
-    if (clip = RequestMarker) {
-        ; Marker meteen wissen zodat dezelfde klik maar één keer wordt verwerkt.
-        A_Clipboard := ""
-        ScanBusy := true
-        try HelperStatus.Text := "Scanverzoek ontvangen - WFM openen"
-        SetTimer(StartScan, -20)
-    }
-}
-
-ManualScan(*) {
-    global ScanBusy, HelperStatus
-    if ScanBusy
-        return
-
-    ScanBusy := true
-    try HelperStatus.Text := "Handmatige testscan gestart"
-    SetTimer(StartScan, -20)
+    try HelperStatus.Text := FindWfmWindow() ? "WFM GEVONDEN - klaar om te scannen" : "WFM NIET gevonden"
 }
 
 FindWfmWindow() {
-    ; Eerst streng zoeken op de titel die jouw echte ingelogde venster heeft.
+    ; Eerst streng zoeken op de titel van het echte ingelogde WFM-venster.
     ; Voorbeeld: Genesys Workforce Management for Agents - My Schedule - Werk - Microsoft Edge
     for hwnd in WinGetList("ahk_exe msedge.exe") {
         try title := WinGetTitle("ahk_id " hwnd)
@@ -106,7 +81,7 @@ FindWfmWindow() {
         }
     }
 
-    ; Fallback voor het compacte loginvenster / afwijkende WFM-titels.
+    ; Fallback voor compacte login-/afwijkende WFM-vensters.
     best := 0
     bestScore := -1
 
@@ -144,41 +119,51 @@ FindWfmWindow() {
         }
     }
 
-    ; Geen willekeurig Edge-venster teruggeven: er moet echt WFM-bewijs zijn.
     return bestScore >= 200 ? best : 0
 }
 
-StartScan(*) {
-    global WfmHwnd, ScanBusy, HelperStatus
+StartScan(exitAfter := false) {
+    global ScanBusy, HelperStatus
 
-    target := (WfmHwnd && WinExist("ahk_id " WfmHwnd)) ? WfmHwnd : FindWfmWindow()
-    WfmHwnd := target
+    if ScanBusy
+        return
+    ScanBusy := true
+
+    target := FindWfmWindow()
 
     if (!target || !WinExist("ahk_id " target)) {
         ScanBusy := false
-        try HelperStatus.Text := "WFM NIET gevonden"
-        MsgBox("Ik kan het Genesys WFM-venster niet vinden.`n`nLaat het ingelogde My Schedule-venster open staan en probeer opnieuw.", "WFM Bridge Helper v9")
+        if !exitAfter
+            try HelperStatus.Text := "WFM NIET gevonden"
+        MsgBox("Ik kan het Genesys WFM-venster niet vinden.`n`nLaat het ingelogde My Schedule-venster open staan en probeer opnieuw.", "WFM Bridge")
+        if exitAfter
+            ExitApp()
         return
     }
 
     try code := DownloadScanner()
     catch Error as err {
         ScanBusy := false
-        try HelperStatus.Text := "Scanner downloaden mislukt"
-        MsgBox("De scanner-code kon niet worden geladen.`n`n" err.Message, "WFM Bridge Helper v9")
+        MsgBox("De scanner-code kon niet worden geladen.`n`n" err.Message, "WFM Bridge")
+        if exitAfter
+            ExitApp()
         return
     }
 
     if (SubStr(code, 1, 11) != "javascript:") {
         ScanBusy := false
-        try HelperStatus.Text := "Ongeldige scanner-code"
-        MsgBox("De opgehaalde scanner begint niet met javascript:.", "WFM Bridge Helper v9")
+        MsgBox("De opgehaalde scanner begint niet met javascript:.", "WFM Bridge")
+        if exitAfter
+            ExitApp()
         return
     }
 
     oldClipboard := ClipboardAll()
 
     try {
+        if !exitAfter
+            try HelperStatus.Text := "WFM gevonden - scanner starten"
+
         PrepareWfmForScan(target)
 
         A_Clipboard := SubStr(code, 12)
@@ -197,28 +182,35 @@ StartScan(*) {
         Sleep(180)
         Send("{Enter}")
 
-        try HelperStatus.Text := "SCANNER GESTART in WFM"
-        SetTimer(UnlockScan, -5000)
+        if !exitAfter {
+            try HelperStatus.Text := "SCANNER GESTART in WFM"
+            SetTimer(UnlockManualScan, -4500)
+        }
     }
     catch Error as err {
         ScanBusy := false
-        try HelperStatus.Text := "Scan starten mislukt"
-        MsgBox("De scanner kon niet in WFM worden gestart.`n`n" err.Message, "WFM Bridge Helper v9")
+        MsgBox("De scanner kon niet in WFM worden gestart.`n`n" err.Message, "WFM Bridge")
+        if exitAfter
+            ExitApp()
+        return
     }
     finally {
         A_Clipboard := oldClipboard
     }
+
+    ; Na injectie draait de scanner zelfstandig in WFM. De protocol-helper
+    ; hoeft dus niet open te blijven.
+    if exitAfter
+        SetTimer(() => ExitApp(), -1200)
 }
 
-UnlockScan(*) {
+UnlockManualScan(*) {
     global ScanBusy, HelperStatus
     ScanBusy := false
-    if FindWfmWindow()
-        try HelperStatus.Text := "WFM GEVONDEN - klaar om te scannen"
+    try HelperStatus.Text := FindWfmWindow() ? "WFM GEVONDEN - klaar om te scannen" : "WFM NIET gevonden"
 }
 
 PrepareWfmForScan(target) {
-    ; Voor de scan vergroten we WFM naar de bekende desktop-layout.
     try {
         primary := MonitorGetPrimary()
         MonitorGetWorkArea(primary, &ml, &mt, &mr, &mb)
