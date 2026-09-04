@@ -2,10 +2,11 @@
 #SingleInstance Force
 Persistent
 
-; WFM-TEST - native teamkiezer + WFM scan helper
-; v7: GEEN herkenning of detectie meer voor het tonen van de teamkiezer.
-; Zodra deze helper start, staat "Selecteer je team" direct in beeld en blijft
-; het venster boven andere vensters staan. KCD Team 3 start de bestaande scan.
+; WFM-TEST - page button -> WFM scan helper
+; v8: GEEN native team-popup meer.
+; De vaste knop op WFM-TEST zet kort de Edge-venstertitel op een scan-signaal.
+; Deze helper ziet dat signaal, zoekt het reeds geopende WFM-venster en start
+; daarin de bestaande 6-weeks scanner.
 
 SCANNER_URLS := [
     "https://svanbergen99.github.io/WFM-TEST/WFM-Planning-Scan-Send-Bookmarklet.txt",
@@ -13,88 +14,75 @@ SCANNER_URLS := [
 ]
 
 TEST_PAGE_TITLE := "Rooster WFM Test"
-HELPER_VERSION := "v7 direct zichtbaar"
+REQUEST_MARKER := "WFM_SCAN_REQUEST_KCD_TEAM_3"
+HELPER_VERSION := "v8 page-knop"
 
 global ScannerUrls := SCANNER_URLS
 global TestPageTitle := TEST_PAGE_TITLE
+global RequestMarker := REQUEST_MARKER
 global HelperVersion := HELPER_VERSION
 
 global WfmHwnd := 0
-global TeamPresented := false
-global TeamDismissed := false
 global ScanBusy := false
+global LastRequestHwnd := 0
 
-global HelperGui := 0
-global HelperStatus := 0
-global TeamGui := 0
-global TeamTitle := 0
-global TeamHint := 0
-global TeamDropdown := 0
+a_IconTip := "WFM Bridge Helper " HELPER_VERSION
+SetTimer(MonitorScanRequest, 150)
 
-BuildHelper()
-ShowNativeTeamSelector(false)
-SetTimer(MonitorFlow, 200)
+MonitorScanRequest(*) {
+    global ScanBusy, LastRequestHwnd, WfmHwnd
 
-BuildHelper() {
-    global HelperGui, HelperStatus, HelperVersion
+    requestHwnd := FindRequestWindow()
 
-    HelperGui := Gui("+AlwaysOnTop +ToolWindow -MaximizeBox -MinimizeBox", "WFM Bridge Helper " HelperVersion)
-    HelperGui.MarginX := 10
-    HelperGui.MarginY := 10
-
-    HelperGui.SetFont("s9 Bold", "Segoe UI")
-    HelperStatus := HelperGui.AddText("w260 Center", "Teamkiezer wordt geopend")
-
-    HelperGui.SetFont("s8 Norm", "Segoe UI")
-    btn := HelperGui.AddButton("xm w260 h36", "Toon teamkiezer")
-    btn.OnEvent("Click", ReopenTeamSelector)
-
-    HelperGui.AddText("xm w260 Center c666666", HelperVersion)
-    HelperGui.OnEvent("Close", (*) => ExitApp())
-    HelperGui.Show("AutoSize")
-}
-
-ReopenTeamSelector(*) {
-    global TeamDismissed
-    TeamDismissed := false
-    ShowNativeTeamSelector(true)
-}
-
-MonitorFlow(*) {
-    global TeamPresented, TeamDismissed, ScanBusy, WfmHwnd, HelperStatus
-
-    ; Geen pagina-, login-, titel- of beeldherkenning meer.
-    ; Als de popup niet handmatig is gesloten, hoort hij altijd zichtbaar te zijn.
-    if (!TeamPresented && !TeamDismissed && !ScanBusy)
-        ShowNativeTeamSelector(false)
-
-    ; De bestaande WFM-scanner sluit WFM na de ACK.
-    ; Zodra dat gebeurt sluiten we ook de native teamkiezer.
-    if (ScanBusy && WfmHwnd && !WinExist("ahk_id " WfmHwnd)) {
-        ScanBusy := false
-        TeamDismissed := true
-        WfmHwnd := 0
-        CloseTeamSelector(false)
-        try HelperStatus.Text := "Scan klaar"
+    if !requestHwnd {
+        LastRequestHwnd := 0
+        if (ScanBusy && WfmHwnd && !WinExist("ahk_id " WfmHwnd)) {
+            ScanBusy := false
+            WfmHwnd := 0
+        }
         return
     }
 
-    if TeamPresented
-        KeepTeamOnTop()
+    if ScanBusy
+        return
+
+    if (LastRequestHwnd = requestHwnd)
+        return
+
+    LastRequestHwnd := requestHwnd
+    ScanBusy := true
+    SetTimer(StartScanFromPage, -20)
 }
 
-FindWfmWindow() {
-    global TestPageTitle
+FindRequestWindow() {
+    global RequestMarker
+
+    for hwnd in WinGetList("ahk_exe msedge.exe") {
+        try title := WinGetTitle("ahk_id " hwnd)
+        catch continue
+
+        if InStr(title, RequestMarker)
+            return hwnd
+    }
+
+    return 0
+}
+
+FindWfmWindow(requestHwnd := 0) {
+    global TestPageTitle, RequestMarker
 
     best := 0
     bestScore := -9999
     active := WinExist("A")
 
     for hwnd in WinGetList("ahk_exe msedge.exe") {
+        if (requestHwnd && hwnd = requestHwnd)
+            continue
+
         try title := WinGetTitle("ahk_id " hwnd)
         catch continue
 
-        if InStr(title, TestPageTitle)
+        if InStr(title, TestPageTitle) || InStr(title, RequestMarker)
             continue
 
         try WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
@@ -107,22 +95,22 @@ FindWfmWindow() {
         lower := StrLower(title)
 
         if InStr(lower, "wfm")
-            score += 160
+            score += 180
         if InStr(lower, "genesys")
-            score += 160
+            score += 180
         if InStr(lower, "workforce")
-            score += 140
-        if InStr(lower, "schedule")
-            score += 70
-        if InStr(lower, "login")
-            score += 50
-
-        ; De WFM-loginpopup is expres compact.
-        if (w >= 320 && w <= 650 && h >= 380 && h <= 750)
             score += 150
+        if InStr(lower, "schedule")
+            score += 80
+        if InStr(lower, "login")
+            score += 60
+
+        ; De WFM-popup is tijdens login expres compact.
+        if (w >= 320 && w <= 650 && h >= 380 && h <= 750)
+            score += 170
 
         if (hwnd = active)
-            score += 20
+            score += 15
 
         if (score > bestScore) {
             bestScore := score
@@ -133,132 +121,16 @@ FindWfmWindow() {
     return best
 }
 
-ShowNativeTeamSelector(force := false) {
-    global TeamPresented, TeamDismissed, TeamGui, TeamTitle, TeamHint, TeamDropdown, HelperStatus
+StartScanFromPage(*) {
+    global WfmHwnd, ScanBusy, LastRequestHwnd
 
-    if TeamPresented {
-        KeepTeamOnTop()
-        try WinActivate("ahk_id " TeamGui.Hwnd)
-        return
-    }
-
-    try {
-        if IsObject(TeamGui)
-            TeamGui.Destroy()
-    }
-
-    TeamGui := Gui("+AlwaysOnTop +ToolWindow -Caption +Border", "Rooster Teamkeuze")
-    TeamGui.BackColor := "111827"
-    TeamGui.MarginX := 36
-    TeamGui.MarginY := 30
-
-    TeamGui.SetFont("s20 Bold cFFFFFF", "Segoe UI")
-    TeamTitle := TeamGui.AddText("w340 Center BackgroundTrans", "Selecteer je team")
-
-    TeamGui.SetFont("s10 Norm cCBD5E1", "Segoe UI")
-    TeamHint := TeamGui.AddText("xm y+12 w340 Center BackgroundTrans", "Log in bij WFM en kies daarna je team.")
-
-    TeamGui.SetFont("s12 Norm c111827", "Segoe UI")
-    TeamDropdown := TeamGui.AddDropDownList("xm y+24 w340 Choose1", ["Kies team", "KCD Team 3"])
-    TeamDropdown.OnEvent("Change", TeamChanged)
-    TeamGui.OnEvent("Escape", (*) => CloseTeamSelector(true))
-
-    ; Rechtsboven zodat de Rooster Log in-knop vrij blijft.
-    try {
-        primary := MonitorGetPrimary()
-        MonitorGetWorkArea(primary, &ml, &mt, &mr, &mb)
-        w := 420
-        h := 235
-        x := Max(ml + 12, mr - w - 28)
-        y := mt + 54
-        TeamGui.Show("x" x " y" y " w" w " h" h)
-    } catch {
-        TeamGui.Show("w420 h235")
-    }
-
-    TeamPresented := true
-    TeamDismissed := false
-    KeepTeamOnTop()
-    SetTimer(KeepTeamOnTop, 150)
-
-    try DllCall("SetForegroundWindow", "ptr", TeamGui.Hwnd)
-    try WinActivate("ahk_id " TeamGui.Hwnd)
-    try HelperStatus.Text := "Teamkiezer zichtbaar"
-}
-
-TeamChanged(ctrl, *) {
-    global ScanBusy, WfmHwnd, TeamHint, HelperStatus
-
-    if (ctrl.Text != "KCD Team 3" || ScanBusy)
-        return
-
-    WfmHwnd := FindWfmWindow()
-
-    if (!WfmHwnd || !WinExist("ahk_id " WfmHwnd)) {
-        try TeamHint.Text := "Open eerst WFM via Rooster Log in en log volledig in."
-        try ctrl.Choose(1)
-        try HelperStatus.Text := "WFM nog niet gevonden"
-        return
-    }
-
-    ScanBusy := true
-    ShowLoadingState()
-    SetTimer(StartScan, -80)
-}
-
-ShowLoadingState() {
-    global TeamTitle, TeamHint, TeamDropdown, HelperStatus
-
-    try TeamDropdown.Visible := false
-    try TeamTitle.Text := "Rooster ophalen…"
-    try TeamHint.Text := "Even geduld. WFM wordt automatisch gescand."
-    try HelperStatus.Text := "6-weeks scan voorbereiden"
-    KeepTeamOnTop()
-}
-
-KeepTeamOnTop(*) {
-    global TeamPresented, TeamGui, WfmHwnd
-
-    if (!TeamPresented || !IsObject(TeamGui)) {
-        SetTimer(KeepTeamOnTop, 0)
-        return
-    }
-
-    if (WfmHwnd && WinExist("ahk_id " WfmHwnd))
-        try WinSetAlwaysOnTop(0, "ahk_id " WfmHwnd)
-
-    try WinSetAlwaysOnTop(1, "ahk_id " TeamGui.Hwnd)
-    try DllCall("SetWindowPos", "ptr", TeamGui.Hwnd, "ptr", -1, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x13)
-}
-
-CloseTeamSelector(dismiss := true) {
-    global TeamGui, TeamPresented, TeamDismissed
-
-    SetTimer(KeepTeamOnTop, 0)
-    try {
-        if IsObject(TeamGui)
-            TeamGui.Destroy()
-    }
-    TeamGui := 0
-    TeamPresented := false
-    if dismiss
-        TeamDismissed := true
-}
-
-StartScan(*) {
-    global WfmHwnd, ScanBusy, HelperStatus, TeamHint, TeamDropdown
-
-    target := WfmHwnd
-    if (!target || !WinExist("ahk_id " target)) {
-        target := FindWfmWindow()
-        WfmHwnd := target
-    }
+    requestHwnd := LastRequestHwnd
+    target := FindWfmWindow(requestHwnd)
+    WfmHwnd := target
 
     if (!target || !WinExist("ahk_id " target)) {
         ScanBusy := false
-        try TeamHint.Text := "WFM is niet beschikbaar. Open WFM, log in en probeer opnieuw."
-        try TeamDropdown.Visible := true
-        try TeamDropdown.Choose(1)
+        MsgBox("Ik kan het WFM-venster niet vinden.`n`nOpen WFM via 'Rooster Log in', log volledig in en klik daarna opnieuw op 'Rooster ophalen'.", "WFM Bridge Helper")
         return
     }
 
@@ -278,9 +150,7 @@ StartScan(*) {
     oldClipboard := ClipboardAll()
 
     try {
-        KeepTeamOnTop()
         PrepareWfmForScan(target)
-        KeepTeamOnTop()
 
         A_Clipboard := SubStr(code, 12)
         if !ClipWait(2)
@@ -290,7 +160,6 @@ StartScan(*) {
         if !WinWaitActive("ahk_id " target, , 3)
             throw Error("Het WFM-venster kon niet actief worden gemaakt.")
 
-        KeepTeamOnTop()
         Send("^l")
         Sleep(140)
         SendText("javascript:")
@@ -298,16 +167,9 @@ StartScan(*) {
         Send("^v")
         Sleep(160)
         Send("{Enter}")
-
-        try HelperStatus.Text := "6-weeks scan gestart"
-        Sleep(120)
-        KeepTeamOnTop()
     }
     catch Error as err {
         ScanBusy := false
-        try TeamHint.Text := "Scan kon niet starten. Probeer opnieuw."
-        try TeamDropdown.Visible := true
-        try TeamDropdown.Choose(1)
         MsgBox("De scanner kon niet in WFM worden gestart.`n`n" err.Message, "WFM Bridge Helper")
     }
     finally {
@@ -316,7 +178,7 @@ StartScan(*) {
 }
 
 PrepareWfmForScan(target) {
-    ; Voor de scan vergroten we WFM achter de native teamkiezer naar desktop-layout.
+    ; Voor de scan vergroten we WFM naar de bekende desktop-layout.
     try {
         primary := MonitorGetPrimary()
         MonitorGetWorkArea(primary, &ml, &mt, &mr, &mb)
