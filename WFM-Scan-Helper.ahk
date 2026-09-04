@@ -3,9 +3,9 @@
 Persistent
 
 ; WFM-TEST - native teamkiezer + WFM scan helper
-; v6: geen login-herkenning meer. Zodra WFM-TEST open staat, verschijnt
-; de native teamkiezer direct. De gebruiker logt daarna zelf in bij WFM
-; en kiest pas daarna KCD Team 3 om de bestaande 6-weeks scan te starten.
+; v7: GEEN herkenning of detectie meer voor het tonen van de teamkiezer.
+; Zodra deze helper start, staat "Selecteer je team" direct in beeld en blijft
+; het venster boven andere vensters staan. KCD Team 3 start de bestaande scan.
 
 SCANNER_URLS := [
     "https://svanbergen99.github.io/WFM-TEST/WFM-Planning-Scan-Send-Bookmarklet.txt",
@@ -13,14 +13,13 @@ SCANNER_URLS := [
 ]
 
 TEST_PAGE_TITLE := "Rooster WFM Test"
-HELPER_VERSION := "v6 direct"
+HELPER_VERSION := "v7 direct zichtbaar"
 
 global ScannerUrls := SCANNER_URLS
 global TestPageTitle := TEST_PAGE_TITLE
 global HelperVersion := HELPER_VERSION
 
 global WfmHwnd := 0
-global TestPageHwnd := 0
 global TeamPresented := false
 global TeamDismissed := false
 global ScanBusy := false
@@ -33,6 +32,7 @@ global TeamHint := 0
 global TeamDropdown := 0
 
 BuildHelper()
+ShowNativeTeamSelector(false)
 SetTimer(MonitorFlow, 200)
 
 BuildHelper() {
@@ -43,37 +43,33 @@ BuildHelper() {
     HelperGui.MarginY := 10
 
     HelperGui.SetFont("s9 Bold", "Segoe UI")
-    HelperStatus := HelperGui.AddText("w260 Center", "Wacht op WFM-TEST")
+    HelperStatus := HelperGui.AddText("w260 Center", "Teamkiezer wordt geopend")
 
     HelperGui.SetFont("s8 Norm", "Segoe UI")
     btn := HelperGui.AddButton("xm w260 h36", "Toon teamkiezer")
-    btn.OnEvent("Click", (*) => ShowNativeTeamSelector(true))
+    btn.OnEvent("Click", ReopenTeamSelector)
 
     HelperGui.AddText("xm w260 Center c666666", HelperVersion)
     HelperGui.OnEvent("Close", (*) => ExitApp())
     HelperGui.Show("AutoSize")
 }
 
+ReopenTeamSelector(*) {
+    global TeamDismissed
+    TeamDismissed := false
+    ShowNativeTeamSelector(true)
+}
+
 MonitorFlow(*) {
-    global TestPageHwnd, TeamPresented, TeamDismissed, ScanBusy, WfmHwnd, HelperStatus
+    global TeamPresented, TeamDismissed, ScanBusy, WfmHwnd, HelperStatus
 
-    test := FindTestPageWindow()
+    ; Geen pagina-, login-, titel- of beeldherkenning meer.
+    ; Als de popup niet handmatig is gesloten, hoort hij altijd zichtbaar te zijn.
+    if (!TeamPresented && !TeamDismissed && !ScanBusy)
+        ShowNativeTeamSelector(false)
 
-    if test {
-        TestPageHwnd := test
-        if (!TeamPresented && !TeamDismissed && !ScanBusy) {
-            try HelperStatus.Text := "WFM-TEST open; teamkiezer tonen"
-            ShowNativeTeamSelector(false)
-        }
-    } else {
-        TestPageHwnd := 0
-        TeamDismissed := false
-        if (!ScanBusy && TeamPresented)
-            CloseTeamSelector(false)
-        try HelperStatus.Text := "Wacht op WFM-TEST"
-    }
-
-    ; Tijdens de scan verdwijnt WFM na de ACK. Dan sluiten we ook de native popup.
+    ; De bestaande WFM-scanner sluit WFM na de ACK.
+    ; Zodra dat gebeurt sluiten we ook de native teamkiezer.
     if (ScanBusy && WfmHwnd && !WinExist("ahk_id " WfmHwnd)) {
         ScanBusy := false
         TeamDismissed := true
@@ -85,17 +81,6 @@ MonitorFlow(*) {
 
     if TeamPresented
         KeepTeamOnTop()
-}
-
-FindTestPageWindow() {
-    global TestPageTitle
-    for hwnd in WinGetList("ahk_exe msedge.exe") {
-        try title := WinGetTitle("ahk_id " hwnd)
-        catch continue
-        if InStr(title, TestPageTitle)
-            return hwnd
-    }
-    return 0
 }
 
 FindWfmWindow() {
@@ -122,19 +107,19 @@ FindWfmWindow() {
         lower := StrLower(title)
 
         if InStr(lower, "wfm")
-            score += 140
+            score += 160
         if InStr(lower, "genesys")
-            score += 140
+            score += 160
         if InStr(lower, "workforce")
-            score += 120
+            score += 140
         if InStr(lower, "schedule")
-            score += 60
+            score += 70
         if InStr(lower, "login")
-            score += 40
+            score += 50
 
-        ; Onze WFM-popup is compact tijdens het inloggen.
+        ; De WFM-loginpopup is expres compact.
         if (w >= 320 && w <= 650 && h >= 380 && h <= 750)
-            score += 130
+            score += 150
 
         if (hwnd = active)
             score += 20
@@ -171,14 +156,14 @@ ShowNativeTeamSelector(force := false) {
     TeamTitle := TeamGui.AddText("w340 Center BackgroundTrans", "Selecteer je team")
 
     TeamGui.SetFont("s10 Norm cCBD5E1", "Segoe UI")
-    TeamHint := TeamGui.AddText("xm y+12 w340 Center BackgroundTrans", "Log eerst in bij WFM en kies daarna je team.")
+    TeamHint := TeamGui.AddText("xm y+12 w340 Center BackgroundTrans", "Log in bij WFM en kies daarna je team.")
 
     TeamGui.SetFont("s12 Norm c111827", "Segoe UI")
     TeamDropdown := TeamGui.AddDropDownList("xm y+24 w340 Choose1", ["Kies team", "KCD Team 3"])
     TeamDropdown.OnEvent("Change", TeamChanged)
     TeamGui.OnEvent("Escape", (*) => CloseTeamSelector(true))
 
-    ; Rechtsboven tonen zodat de Rooster Log in-knop op de testpagina vrij blijft.
+    ; Rechtsboven zodat de Rooster Log in-knop vrij blijft.
     try {
         primary := MonitorGetPrimary()
         MonitorGetWorkArea(primary, &ml, &mt, &mr, &mb)
@@ -320,6 +305,9 @@ StartScan(*) {
     }
     catch Error as err {
         ScanBusy := false
+        try TeamHint.Text := "Scan kon niet starten. Probeer opnieuw."
+        try TeamDropdown.Visible := true
+        try TeamDropdown.Choose(1)
         MsgBox("De scanner kon niet in WFM worden gestart.`n`n" err.Message, "WFM Bridge Helper")
     }
     finally {
@@ -328,7 +316,7 @@ StartScan(*) {
 }
 
 PrepareWfmForScan(target) {
-    ; Voor de scan vergroten we WFM achter de native teamkiezer naar de bekende desktop-layout.
+    ; Voor de scan vergroten we WFM achter de native teamkiezer naar desktop-layout.
     try {
         primary := MonitorGetPrimary()
         MonitorGetWorkArea(primary, &ml, &mt, &mr, &mb)
