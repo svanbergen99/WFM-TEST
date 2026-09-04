@@ -2,14 +2,19 @@
 #SingleInstance Force
 Persistent
 
-; WFM-TEST - zelfstandige scan helper
-; Testdoel:
+; WFM-TEST - helper voor de teamkiezer -> WFM scan flow
+;
+; Werking:
 ; 1. Start dit script 1x.
-; 2. Open WFM vanuit WFM-TEST en log normaal in.
-; 3. Klik op de losse zwevende knop "WFM Scan".
-; 4. Het laatst actieve Edge-venster wordt donker gemaakt.
-; 5. Klik "SCAN ROOSTER". De actuele 6-weeks scanner wordt gestart
-;    zonder Edge-favoriet/bookmarklet.
+; 2. Klik op WFM-TEST op "Rooster Log in".
+; 3. WFM opent als popup; de teamkiezer wordt tegelijk op de achtergrond klaargezet.
+; 4. De helper onthoudt het actieve WFM-venster.
+; 5. Zodra de WFM-venstertitel na het inloggen verandert, wordt de teamkiezer
+;    automatisch naar voren gehaald en always-on-top gezet.
+; 6. Klik "KCD Team 3". De teamkiezer wordt zwart met "Rooster ophalen…".
+; 7. De helper ziet het verzoek in de titel van de teamkiezer en start de actuele
+;    6-weeks scanner in het reeds ingelogde WFM-venster.
+; 8. WFM stuurt de data terug naar WFM-TEST en sluit; de teamkiezer sluit daarna ook.
 ;
 ; De helper leest alleen de scanner-code uit de publieke WFM-TEST repo.
 ; WFM-login/wachtwoorden worden niet gelezen of opgeslagen.
@@ -19,146 +24,203 @@ SCANNER_URLS := [
     "https://raw.githubusercontent.com/svanbergen99/WFM-TEST/main/WFM-Planning-Scan-Send-Bookmarklet.txt"
 ]
 
-global LastEdgeHwnd := 0
-global OverlayGui := 0
+TEAM_WAIT_MARKER := "WFM Team Selector"
+TEAM_REQUEST_PREFIX := "WFM_SCAN_REQUEST_"
+TEST_PAGE_TITLE := "Rooster WFM Test"
+
+global ScannerUrls := SCANNER_URLS
+global TeamWaitMarker := TEAM_WAIT_MARKER
+global TeamRequestPrefix := TEAM_REQUEST_PREFIX
+global TestPageTitle := TEST_PAGE_TITLE
+
+global WfmHwnd := 0
+global TeamHwnd := 0
+global BaselineTitle := ""
+global TitleCandidate := ""
+global TitleCandidateTicks := 0
+global ChangedCandidate := ""
+global ChangedTicks := 0
+global TeamPresented := false
+global LastHandledRequest := ""
+global ScanBusy := false
 global HelperGui := 0
 global StatusText := 0
 
-global ScannerUrls := SCANNER_URLS
-
 BuildHelper()
-SetTimer(TrackLastEdgeWindow, 200)
+SetTimer(MonitorWindows, 200)
 
 BuildHelper() {
     global HelperGui, StatusText
-
-    HelperGui := Gui("+AlwaysOnTop +ToolWindow -MaximizeBox -MinimizeBox", "WFM Scan")
+    HelperGui := Gui("+AlwaysOnTop +ToolWindow -MaximizeBox -MinimizeBox", "WFM Bridge Helper")
     HelperGui.MarginX := 10
     HelperGui.MarginY := 10
-    HelperGui.SetFont("s10 Bold", "Segoe UI")
-
-    btn := HelperGui.AddButton("w180 h48", "WFM Scan")
-    btn.OnEvent("Click", ShowOverlay)
-
+    HelperGui.SetFont("s9 Bold", "Segoe UI")
+    StatusText := HelperGui.AddText("w230 Center", "Wacht op Rooster Log in")
     HelperGui.SetFont("s8 Norm", "Segoe UI")
-    StatusText := HelperGui.AddText("w180 Center c666666", "Wacht op een Edge/WFM-venster")
-
+    btn := HelperGui.AddButton("xm w230 h32", "Team kiezer tonen (fallback)")
+    btn.OnEvent("Click", (*) => PresentTeamSelector(true))
     HelperGui.OnEvent("Close", (*) => ExitApp())
     HelperGui.Show("AutoSize")
 }
 
-TrackLastEdgeWindow(*) {
-    global LastEdgeHwnd, StatusText
+MonitorWindows(*) {
+    global WfmHwnd, TeamHwnd, BaselineTitle, TitleCandidate, TitleCandidateTicks
+    global ChangedCandidate, ChangedTicks, TeamPresented, LastHandledRequest, ScanBusy
+    global TeamWaitMarker, TeamRequestPrefix, TestPageTitle, StatusText
 
-    hwnd := WinExist("A")
-    if !hwnd
+    ; Zoek de browser-popup van onze eigen teamkiezer.
+    foundTeam := 0
+    for hwnd in WinGetList("ahk_exe msedge.exe") {
+        try title := WinGetTitle("ahk_id " hwnd)
+        catch continue
+        if InStr(title, TeamWaitMarker) || InStr(title, TeamRequestPrefix) {
+            foundTeam := hwnd
+            break
+        }
+    }
+
+    if foundTeam {
+        if (!TeamHwnd || TeamHwnd != foundTeam) {
+            TeamHwnd := foundTeam
+            TeamPresented := false
+            LastHandledRequest := ""
+            try StatusText.Text := "Teamkiezer gevonden; wacht op WFM"
+        }
+    } else if TeamHwnd {
+        ResetFlow()
+        return
+    }
+
+    if !TeamHwnd
         return
 
-    try processName := WinGetProcessName("ahk_id " hwnd)
-    catch
+    ; Als de gebruiker het team kiest verandert de titel naar WFM_SCAN_REQUEST_...
+    try teamTitle := WinGetTitle("ahk_id " TeamHwnd)
+    catch teamTitle := ""
+
+    if InStr(teamTitle, TeamRequestPrefix) = 1 {
+        if (!ScanBusy && teamTitle != LastHandledRequest) {
+            LastHandledRequest := teamTitle
+            ScanBusy := true
+            SetTimer(StartScanFromTeamRequest, -10)
+        }
+        return
+    }
+
+    ; Het actieve Edge-venster dat niet onze testpagina/teamkiezer is, is in deze flow WFM.
+    active := WinExist("A")
+    if active && IsEdgeWindow(active) && active != TeamHwnd {
+        try activeTitle := WinGetTitle("ahk_id " active)
+        catch activeTitle := ""
+        if !InStr(activeTitle, TeamWaitMarker) && !InStr(activeTitle, TeamRequestPrefix) && !InStr(activeTitle, TestPageTitle) {
+            if (!WfmHwnd || WfmHwnd != active) {
+                WfmHwnd := active
+                BaselineTitle := ""
+                TitleCandidate := ""
+                TitleCandidateTicks := 0
+                ChangedCandidate := ""
+                ChangedTicks := 0
+                TeamPresented := false
+                try StatusText.Text := "WFM gevonden; wacht op login"
+            }
+        }
+    }
+
+    if (!WfmHwnd || !WinExist("ahk_id " WfmHwnd))
         return
 
-    if (StrLower(processName) != "msedge.exe")
+    try currentTitle := WinGetTitle("ahk_id " WfmHwnd)
+    catch return
+
+    ; Eerst laten we de titel van de loginpagina stabiel worden. Dat voorkomt dat een
+    ; eerste laad-titel direct als "login voltooid" wordt gezien.
+    if (BaselineTitle = "") {
+        if (currentTitle = TitleCandidate) {
+            TitleCandidateTicks += 1
+        } else {
+            TitleCandidate := currentTitle
+            TitleCandidateTicks := 0
+        }
+        if (currentTitle != "" && TitleCandidateTicks >= 5) {
+            BaselineTitle := currentTitle
+            try StatusText.Text := "WFM login klaar voor detectie"
+        }
+        return
+    }
+
+    if TeamPresented
         return
 
-    LastEdgeHwnd := hwnd
-
-    try title := WinGetTitle("ahk_id " hwnd)
-    catch title := "Edge"
-
-    if (StrLen(title) > 30)
-        title := SubStr(title, 1, 30) "…"
-
-    try StatusText.Text := "Gekoppeld aan: " title
+    ; Na login navigeert WFM normaal naar de applicatie en verandert de venstertitel.
+    ; We eisen dat de nieuwe titel ongeveer 1 seconde stabiel is.
+    if (currentTitle != BaselineTitle && currentTitle != "") {
+        if (currentTitle = ChangedCandidate) {
+            ChangedTicks += 1
+        } else {
+            ChangedCandidate := currentTitle
+            ChangedTicks := 0
+        }
+        if (ChangedTicks >= 5) {
+            PresentTeamSelector(false)
+        }
+    } else {
+        ChangedCandidate := ""
+        ChangedTicks := 0
+    }
 }
 
-ShowOverlay(*) {
-    global LastEdgeHwnd, OverlayGui
+PresentTeamSelector(force := false) {
+    global TeamHwnd, WfmHwnd, TeamPresented, StatusText
 
-    if (!LastEdgeHwnd || !WinExist("ahk_id " LastEdgeHwnd)) {
-        MsgBox("Ik heb nog geen Edge-venster gezien.`n`nOpen WFM in Edge, klik eenmaal in het WFM-venster en probeer daarna opnieuw.", "WFM Scan")
+    if (!TeamHwnd || !WinExist("ahk_id " TeamHwnd)) {
+        if force
+            MsgBox("De teamkiezer-popup is niet gevonden.`n`nKlik eerst op 'Rooster Log in' op WFM-TEST.", "WFM Bridge Helper")
         return
     }
 
-    try WinGetPos(&x, &y, &w, &h, "ahk_id " LastEdgeHwnd)
-    catch {
-        MsgBox("Het gekoppelde Edge-venster kon niet worden gevonden.", "WFM Scan")
+    if (!WfmHwnd || !WinExist("ahk_id " WfmHwnd)) {
+        if force
+            MsgBox("Het WFM-venster is nog niet gekoppeld.`n`nKlik eenmaal in het ingelogde WFM-venster en probeer opnieuw.", "WFM Bridge Helper")
         return
     }
 
-    if (w < 500 || h < 350) {
-        MsgBox("Het gekoppelde Edge-venster is te klein om de scan-overlay te tonen.", "WFM Scan")
-        return
-    }
-
-    try {
-        if IsObject(OverlayGui)
-            OverlayGui.Destroy()
-    }
-
-    OverlayGui := Gui("+AlwaysOnTop -Caption +ToolWindow", "WFM Scan Overlay")
-    OverlayGui.BackColor := "111827"
-
-    titleY := Round(h * 0.30)
-    buttonY := Round(h * 0.46)
-
-    OverlayGui.SetFont("s24 Bold cFFFFFF", "Segoe UI")
-    OverlayGui.AddText("x0 y" titleY " w" w " Center BackgroundTrans", "WFM ROOSTER")
-
-    OverlayGui.SetFont("s11 Norm cD1D5DB", "Segoe UI")
-    OverlayGui.AddText("x0 y" (titleY + 48) " w" w " Center BackgroundTrans", "WFM is ingelogd? Start dan de persoonlijke 6-weeks scan.")
-
-    OverlayGui.SetFont("s18 Bold c111827", "Segoe UI")
-    scanButton := OverlayGui.AddButton("x" Round((w - 340) / 2) " y" buttonY " w340 h82", "SCAN ROOSTER")
-    scanButton.OnEvent("Click", StartScan)
-
-    OverlayGui.SetFont("s10 Norm c111827", "Segoe UI")
-    cancelButton := OverlayGui.AddButton("x" Round((w - 180) / 2) " y" (buttonY + 104) " w180 h42", "Annuleren")
-    cancelButton.OnEvent("Click", CancelOverlay)
-
-    OverlayGui.OnEvent("Escape", CancelOverlay)
-    OverlayGui.Show("x" x " y" y " w" w " h" h)
-
-    ; Bijna volledig donker, maar knop/tekst blijven zichtbaar.
-    try WinSetTransparent(242, "ahk_id " OverlayGui.Hwnd)
+    try WinSetAlwaysOnTop(1, "ahk_id " TeamHwnd)
+    try WinActivate("ahk_id " TeamHwnd)
+    TeamPresented := true
+    try StatusText.Text := "Kies nu KCD Team 3"
 }
 
-CancelOverlay(*) {
-    global OverlayGui
-    try OverlayGui.Destroy()
-    OverlayGui := 0
-}
+StartScanFromTeamRequest(*) {
+    global WfmHwnd, TeamHwnd, ScanBusy, StatusText
 
-StartScan(*) {
-    global LastEdgeHwnd, OverlayGui
-
-    target := LastEdgeHwnd
-
-    try OverlayGui.Hide()
-
+    target := WfmHwnd
     if (!target || !WinExist("ahk_id " target)) {
-        MsgBox("Het WFM/Edge-venster is niet meer beschikbaar.", "WFM Scan")
+        ScanBusy := false
+        MsgBox("Het WFM-venster is niet meer beschikbaar.", "WFM Bridge Helper")
         return
     }
 
     try code := DownloadScanner()
     catch Error as err {
-        MsgBox("De scanner-code kon niet worden geladen.`n`n" err.Message, "WFM Scan")
-        try OverlayGui.Show()
+        ScanBusy := false
+        MsgBox("De scanner-code kon niet worden geladen.`n`n" err.Message, "WFM Bridge Helper")
         return
     }
 
     if (SubStr(code, 1, 11) != "javascript:") {
-        MsgBox("De opgehaalde scanner begint niet met javascript:.`nDe scan is voor de veiligheid niet gestart.", "WFM Scan")
-        try OverlayGui.Show()
+        ScanBusy := false
+        MsgBox("De opgehaalde scanner begint niet met javascript:.`nDe scan is voor de veiligheid niet gestart.", "WFM Bridge Helper")
         return
     }
 
     oldClipboard := ClipboardAll()
 
     try {
-        ; Edge verwijdert soms een volledig geplakte javascript:-URL.
-        ; Daarom typen we het protocol zelf en plakken alleen de code erachter.
+        ; De teamkiezer blijft always-on-top en dus zichtbaar als zwart laadscherm.
+        ; WFM krijgt alleen tijdelijk de toetsenbordfocus achter dat venster.
+        if (TeamHwnd && WinExist("ahk_id " TeamHwnd))
+            WinSetAlwaysOnTop(1, "ahk_id " TeamHwnd)
+
         A_Clipboard := SubStr(code, 12)
         if !ClipWait(2)
             throw Error("De scanner kon niet tijdelijk naar het klembord worden gezet.")
@@ -168,24 +230,54 @@ StartScan(*) {
             throw Error("Het WFM-venster kon niet actief worden gemaakt.")
 
         Send("^l")
-        Sleep(150)
+        Sleep(140)
         SendText("javascript:")
-        Sleep(80)
+        Sleep(70)
         Send("^v")
-        Sleep(180)
+        Sleep(160)
         Send("{Enter}")
-        Sleep(500)
 
-        ; Vanaf hier draait dezelfde scanner als de oude Edge-favoriet:
-        ; 6 weeks -> OK -> scan -> postMessage -> WFM sluit na ACK.
+        try StatusText.Text := "6-weeks scan gestart"
+
+        ; Zet de teamkiezer nogmaals always-on-top. De scanner draait ondertussen in WFM.
+        Sleep(120)
+        if (TeamHwnd && WinExist("ahk_id " TeamHwnd))
+            WinSetAlwaysOnTop(1, "ahk_id " TeamHwnd)
     }
     catch Error as err {
-        MsgBox("De scanner kon niet in Edge worden gestart.`n`n" err.Message, "WFM Scan")
-        try OverlayGui.Show()
+        MsgBox("De scanner kon niet in WFM worden gestart.`n`n" err.Message, "WFM Bridge Helper")
     }
     finally {
         A_Clipboard := oldClipboard
+        ; Niet meteen opnieuw dezelfde titel verwerken.
+        SetTimer(ReleaseScanBusy, -2500)
     }
+}
+
+ReleaseScanBusy(*) {
+    global ScanBusy
+    ScanBusy := false
+}
+
+IsEdgeWindow(hwnd) {
+    try return StrLower(WinGetProcessName("ahk_id " hwnd)) = "msedge.exe"
+    catch return false
+}
+
+ResetFlow() {
+    global WfmHwnd, TeamHwnd, BaselineTitle, TitleCandidate, TitleCandidateTicks
+    global ChangedCandidate, ChangedTicks, TeamPresented, LastHandledRequest, ScanBusy, StatusText
+    WfmHwnd := 0
+    TeamHwnd := 0
+    BaselineTitle := ""
+    TitleCandidate := ""
+    TitleCandidateTicks := 0
+    ChangedCandidate := ""
+    ChangedTicks := 0
+    TeamPresented := false
+    LastHandledRequest := ""
+    ScanBusy := false
+    try StatusText.Text := "Wacht op Rooster Log in"
 }
 
 DownloadScanner() {
