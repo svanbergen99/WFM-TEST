@@ -5,15 +5,74 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>WFM Bridge Test</title>
   <style>
-    :root{font-family:Arial,Helvetica,sans-serif;color:#172033;background:#f3f5f8}
-    *{box-sizing:border-box}body{margin:0;padding:32px 16px}.wrap{max-width:980px;margin:auto}.card{background:#fff;border:1px solid #dbe2ea;border-radius:18px;padding:22px;box-shadow:0 12px 35px rgba(15,23,42,.08);margin-bottom:16px}h1,h2{margin-top:0}button{border:0;border-radius:10px;padding:12px 16px;background:#5b4bc4;color:#fff;font-weight:700;cursor:pointer}.status{padding:12px 14px;border-radius:10px;background:#eef2ff;margin:12px 0}.ok{background:#e9f8ef;color:#216a43}.bad{background:#fdecec;color:#8b3030}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}.stat{padding:12px;border-radius:10px;background:#f5f6fa}.stat b{display:block;font-size:22px}.schedule{border:1px solid #e4e7ec;border-radius:10px;overflow:hidden;margin:9px 0}.head{padding:8px 10px;background:#f7f8fa;font-weight:700}.act{padding:7px 10px;border-top:1px solid #eceef2;font-size:14px}details{margin-top:14px}pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;padding:12px;border-radius:10px;max-height:420px;overflow:auto}@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}}
+    :root{
+      font-family:Arial,Helvetica,sans-serif;
+      color:#172033;
+      background:#eef1f5;
+      --accent:#5b4bc4;
+      --line:#dbe2ea;
+      --muted:#64748b;
+      --surface:#fff;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;padding:28px 14px 60px;background:#eef1f5}
+    .wrap{max-width:1440px;margin:auto}
+    .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 12px 35px rgba(15,23,42,.08);margin-bottom:16px}
+    h1,h2,h3{margin-top:0}
+    p{line-height:1.5}
+    button{border:0;border-radius:10px;padding:12px 16px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}
+    .status{padding:12px 14px;border-radius:10px;background:#eef2ff;margin:12px 0}
+    .ok{background:#e9f8ef;color:#216a43}
+    .bad{background:#fdecec;color:#8b3030}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+    .stat{padding:12px;border-radius:10px;background:#f5f6fa}
+    .stat b{display:block;font-size:22px}
+    .scan-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+    .scan-title{margin-bottom:4px}
+    .scan-sub{color:var(--muted);font-size:14px}
+    .calendar-stack{display:grid;gap:18px;margin-top:18px}
+    .month-card{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff}
+    .month-title{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 17px;background:#f8f7fc;border-bottom:1px solid var(--line)}
+    .month-title h3{margin:0;font-size:21px;text-transform:capitalize}
+    .month-title span{color:var(--muted);font-size:13px;font-weight:700}
+    .weekdays,.month-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+    .weekdays{background:#fafbfc;border-bottom:1px solid var(--line)}
+    .weekday{padding:9px 8px;text-align:center;color:#64748b;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+    .day{min-height:150px;padding:9px;border-right:1px solid #e7ebf0;border-bottom:1px solid #e7ebf0;background:#fff;overflow:hidden}
+    .day:nth-child(7n){border-right:0}
+    .day.outside{background:#f7f8fa;color:#a5adba}
+    .day.today{box-shadow:inset 0 0 0 2px rgba(91,75,196,.55);background:#fbfaff}
+    .day-number{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:7px;font-size:13px;font-weight:800}
+    .today-badge{font-size:10px;background:var(--accent);color:#fff;border-radius:999px;padding:2px 6px}
+    .no-data{color:#a0a8b5;font-size:11px;margin-top:9px}
+    .shift{border:1px solid #e0e5eb;border-radius:9px;background:#f9fafb;margin-top:6px;overflow:hidden}
+    .shift-time{padding:6px 7px;background:#f1f3f6;font-size:12px;font-weight:800}
+    .activities{padding:5px 6px;display:grid;gap:4px}
+    .activity{position:relative;padding:5px 6px 5px 10px;background:#fff;border:1px solid #edf0f3;border-radius:6px;font-size:10.5px;line-height:1.28;overflow-wrap:anywhere}
+    .activity::before{content:"";position:absolute;left:3px;top:4px;bottom:4px;width:3px;border-radius:4px;background:var(--activity-color,#cbd5e1)}
+    .activity-time{display:block;color:#667085;font-size:9.5px;margin-top:1px}
+    details{margin-top:16px}
+    pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;padding:12px;border-radius:10px;max-height:420px;overflow:auto}
+    @media(max-width:1000px){
+      .day{min-height:128px;padding:6px}
+      .activity{font-size:9.5px}
+      .shift-time{font-size:11px}
+    }
+    @media(max-width:760px){
+      body{padding:14px 8px 40px}
+      .card{padding:15px}
+      .stats{grid-template-columns:repeat(2,1fr)}
+      .calendar-scroll{overflow-x:auto;padding-bottom:4px}
+      .calendar-inner{min-width:840px}
+      .day{min-height:145px}
+    }
   </style>
 </head>
 <body>
 <div class="wrap">
   <section class="card">
     <h1>WFM Bridge Test</h1>
-    <p>Deze pagina is alleen bedoeld om de WFM → browserbridge te testen. Er wordt niets naar een roosterbestand geschreven.</p>
+    <p>Deze pagina ontvangt de verse My Schedule-scan. Zodra WFM de scan heeft teruggestuurd en sluit, staat hieronder direct het kalenderoverzicht klaar.</p>
     <button id="openWfm" type="button">WFM Login openen</button>
     <div id="status" class="status">Receiver staat klaar en wacht op een WFM-scan.</div>
   </section>
@@ -25,51 +84,122 @@
   const WFM_ORIGIN = 'https://genesyswfm.hosting.corp';
   const WFM_URL = `${WFM_ORIGIN}/wfm/Login.jsp`;
   const STORAGE_KEY = 'wfm-test-last-live-scan';
+  const MONTHS = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+  const WEEKDAYS = ['ma','di','wo','do','vr','za','zo'];
   const status = document.getElementById('status');
   const result = document.getElementById('result');
   const openButton = document.getElementById('openWfm');
+  let wfmWindow = null;
+  let closeWatch = null;
   window.name = 'wfmTestReceiver';
 
   function esc(v){return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function countActivities(schedules){return schedules.reduce((n,d)=>n+(Array.isArray(d.activities)?d.activities.length:0),0);}
   function spanDays(first,last){if(!first||!last)return 0;return Math.round((new Date(last+'T12:00:00')-new Date(first+'T12:00:00'))/86400000)+1;}
+  function dateKeyLocal(date=new Date()){
+    const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
+    const g=t=>p.find(x=>x.type===t)?.value||'';
+    return `${g('year')}-${g('month')}-${g('day')}`;
+  }
+  function monthKeyShift(monthKey,amount){
+    const [y,m]=monthKey.split('-').map(Number);
+    const d=new Date(Date.UTC(y,m-1+amount,1));
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}`;
+  }
+  function monthKeysBetween(first,last){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(first)||!/^\d{4}-\d{2}-\d{2}$/.test(last))return[];
+    const out=[];
+    let key=first.slice(0,7),end=last.slice(0,7),guard=0;
+    while(key<=end&&guard++<24){out.push(key);key=monthKeyShift(key,1);}
+    return out;
+  }
+  function safeColor(v){return /^#[0-9a-f]{6}$/i.test(String(v||''))?String(v):'#cbd5e1';}
+  function timeRange(start,end){return start&&end?`${start}–${end}`:(start||end||'');}
+  function buildMonth(monthKey, schedules, first, last){
+    const [year,month]=monthKey.split('-').map(Number);
+    const monthSchedules=schedules.filter(s=>String(s.date||'').slice(0,7)===monthKey);
+    const byDate=new Map();
+    for(const s of monthSchedules){
+      const key=String(s.date||'').slice(0,10);
+      if(!byDate.has(key))byDate.set(key,[]);
+      byDate.get(key).push(s);
+    }
+    const daysInMonth=new Date(Date.UTC(year,month,0)).getUTCDate();
+    const firstWeekday=new Date(Date.UTC(year,month-1,1,12)).getUTCDay();
+    const leading=(firstWeekday+6)%7;
+    const used=leading+daysInMonth;
+    const total=used<=35?35:42;
+    const cells=[];
+    const today=dateKeyLocal();
+    for(let i=0;i<total;i++){
+      const day=i-leading+1;
+      if(day<1||day>daysInMonth){cells.push('<div class="day outside"></div>');continue;}
+      const key=`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const rows=byDate.get(key)||[];
+      const insideScan=(!first||key>=first)&&(!last||key<=last);
+      const shifts=rows.map(s=>{
+        const acts=(Array.isArray(s.activities)?s.activities:[]).map(a=>`<div class="activity" style="--activity-color:${safeColor(a.color)}">${esc(a.name||a.type||'Activiteit')}<span class="activity-time">${esc(timeRange(a.start,a.end))}</span></div>`).join('');
+        return `<div class="shift"><div class="shift-time">${esc(timeRange(s.start,s.end)||'Rooster')}</div>${acts?`<div class="activities">${acts}</div>`:''}</div>`;
+      }).join('');
+      cells.push(`<div class="day${key===today?' today':''}"><div class="day-number"><span>${day}</span>${key===today?'<span class="today-badge">Vandaag</span>':''}</div>${shifts||(insideScan?'<div class="no-data">Geen roosterdata</div>':'')}</div>`);
+    }
+    return `<section class="month-card"><header class="month-title"><h3>${MONTHS[month-1]} ${year}</h3><span>${monthSchedules.length} roosterregel${monthSchedules.length===1?'':'s'}</span></header><div class="calendar-scroll"><div class="calendar-inner"><div class="weekdays">${WEEKDAYS.map(d=>`<div class="weekday">${d}</div>`).join('')}</div><div class="month-grid">${cells.join('')}</div></div></div></section>`;
+  }
   function render(message){
-    const payload = message?.payload || {};
-    const schedules = Array.isArray(payload.schedules) ? payload.schedules.slice() : [];
+    const payload=message?.payload||{};
+    const schedules=Array.isArray(payload.schedules)?payload.schedules.slice():[];
     schedules.sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||String(a.start||'').localeCompare(String(b.start||'')));
-    const dates=[...new Set(schedules.map(x=>String(x.date||'').slice(0,10)).filter(Boolean))].sort();
+    const dates=[...new Set(schedules.map(x=>String(x.date||'').slice(0,10)).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)))].sort();
     const first=dates[0]||'';
     const last=dates.at(-1)||'';
     const activities=countActivities(schedules);
+    const months=monthKeysBetween(first,last);
     result.hidden=false;
     result.innerHTML=`
-      <h2>WFM LIVE SCAN ONTVANGEN ✅</h2>
+      <div class="scan-head">
+        <div><h2 class="scan-title">Mijn Rooster — verse WFM-scan</h2><div class="scan-sub">Planning period · ontvangen ${esc(new Date().toLocaleTimeString('nl-NL'))}</div></div>
+      </div>
       <div class="stats">
         <div class="stat"><b>${dates.length}</b>unieke datums</div>
         <div class="stat"><b>${spanDays(first,last)}</b>kalenderdagen</div>
         <div class="stat"><b>${schedules.length}</b>roosterregels</div>
         <div class="stat"><b>${activities}</b>activiteiten</div>
       </div>
-      <div class="status ok">Periode: <b>${esc(first||'—')}</b> t/m <b>${esc(last||'—')}</b><br>Ontvangen: ${esc(new Date().toLocaleTimeString('nl-NL'))}</div>
-      <div>${schedules.map(d=>`<div class="schedule"><div class="head">${esc(d.date)} · ${esc(d.start)}–${esc(d.end)}</div>${(d.activities||[]).map(a=>`<div class="act">${esc(a.start)}–${esc(a.end)} · ${esc(a.name||a.type||'Activiteit')}</div>`).join('')}</div>`).join('')}</div>
+      <div class="status ok">WFM LIVE SCAN ONTVANGEN ✅<br>Periode: <b>${esc(first||'—')}</b> t/m <b>${esc(last||'—')}</b></div>
+      <div class="calendar-stack">${months.map(m=>buildMonth(m,schedules,first,last)).join('')||'<div class="status bad">Geen kalenderdata ontvangen.</div>'}</div>
       <details><summary>Ruwe ontvangen JSON</summary><pre>${esc(JSON.stringify(message,null,2))}</pre></details>`;
+    result.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  function watchWfmClose(){
+    clearInterval(closeWatch);
+    closeWatch=setInterval(()=>{
+      if(!wfmWindow)return;
+      let closed=false;
+      try{closed=wfmWindow.closed;}catch(_){return;}
+      if(!closed)return;
+      clearInterval(closeWatch);
+      closeWatch=null;
+      wfmWindow=null;
+      if(!result.hidden){status.className='status ok';status.textContent='WFM is gesloten. De verse scan staat hieronder als kalenderoverzicht.';}
+    },300);
   }
 
-  openButton.addEventListener('click', () => {
+  openButton.addEventListener('click',()=>{
     status.className='status';
     status.textContent='WFM is geopend. Receiver blijft hier wachten op de scan.';
-    const w=window.open(WFM_URL,'wfmLiveTestWindow');
-    try{w?.focus();}catch(_){ }
-    if(!w){status.className='status bad';status.textContent='WFM-venster werd door de browser geblokkeerd.';}
+    wfmWindow=window.open(WFM_URL,'wfmLiveTestWindow');
+    try{wfmWindow?.focus();}catch(_){ }
+    if(!wfmWindow){status.className='status bad';status.textContent='WFM-venster werd door de browser geblokkeerd.';return;}
+    watchWfmClose();
   });
 
-  window.addEventListener('message', event => {
-    if(event.origin !== WFM_ORIGIN) return;
+  window.addEventListener('message',event=>{
+    if(event.origin!==WFM_ORIGIN)return;
     const data=event.data;
-    if(!data || data.type !== 'wfm-live-scan' || !Array.isArray(data?.payload?.schedules)) return;
+    if(!data||data.type!=='wfm-live-scan'||!Array.isArray(data?.payload?.schedules))return;
     try{sessionStorage.setItem(STORAGE_KEY,JSON.stringify(data));}catch(_){ }
     status.className='status ok';
-    status.textContent='WFM-scan ontvangen. De bridge werkt.';
+    status.textContent='WFM-scan ontvangen. Kalender wordt bijgewerkt; WFM kan nu sluiten.';
     render(data);
     try{event.source?.postMessage({type:'wfm-live-ack',receivedAt:new Date().toISOString()},WFM_ORIGIN);}catch(_){ }
   });
