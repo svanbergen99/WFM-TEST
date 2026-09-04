@@ -10,7 +10,7 @@ Persistent
 ; 3. WFM opent klein en compact: alleen de login hoeft zichtbaar te zijn.
 ; 4. De helper onthoudt het actieve WFM-venster.
 ; 5. Zodra de WFM-venstertitel na het inloggen verandert, wordt de teamkiezer
-;    automatisch naar voren gehaald en always-on-top gezet.
+;    automatisch naar voren gehaald en met OS-topmost-prioriteit boven WFM gehouden.
 ; 6. Klik "KCD Team 3". De teamkiezer wordt zwart met "Rooster ophalen…".
 ; 7. Achter die zwarte popup vergroot de helper WFM tijdelijk naar een normale
 ;    scan-afmeting, zodat de bestaande 6-weeks scanner alle WFM-elementen goed ziet.
@@ -97,6 +97,7 @@ MonitorWindows(*) {
     catch teamTitle := ""
 
     if InStr(teamTitle, TeamRequestPrefix) = 1 {
+        ForceTeamForeground(false)
         if (!ScanBusy && teamTitle != LastHandledRequest) {
             LastHandledRequest := teamTitle
             ScanBusy := true
@@ -143,8 +144,10 @@ MonitorWindows(*) {
         return
     }
 
-    if TeamPresented
+    if TeamPresented {
+        ForceTeamForeground(false)
         return
+    }
 
     if (currentTitle != BaselineTitle && currentTitle != "") {
         if (currentTitle = ChangedCandidate) {
@@ -177,10 +180,43 @@ PresentTeamSelector(force := false) {
         return
     }
 
-    try WinSetAlwaysOnTop(1, "ahk_id " TeamHwnd)
-    try WinActivate("ahk_id " TeamHwnd)
+    ; WFM expliciet niet-topmost maken en de teamkiezer daarna op OS-niveau
+    ; boven alle normale vensters plaatsen. Dit voorkomt dat Edge/WFM hem bedekt.
+    ForceTeamForeground(true)
     TeamPresented := true
+    SetTimer(KeepTeamForeground, 200)
     try StatusText.Text := "Kies nu KCD Team 3"
+}
+
+ForceTeamForeground(activate := false) {
+    global TeamHwnd, WfmHwnd
+
+    if (WfmHwnd && WinExist("ahk_id " WfmHwnd)) {
+        try WinSetAlwaysOnTop(0, "ahk_id " WfmHwnd)
+    }
+
+    if (!TeamHwnd || !WinExist("ahk_id " TeamHwnd))
+        return
+
+    try WinSetAlwaysOnTop(1, "ahk_id " TeamHwnd)
+
+    ; HWND_TOPMOST (-1) + SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE.
+    ; Dit is sterker dan alleen de browser-focusvolgorde.
+    try DllCall("SetWindowPos", "ptr", TeamHwnd, "ptr", -1, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x13)
+
+    if activate {
+        try WinActivate("ahk_id " TeamHwnd)
+        try WinWaitActive("ahk_id " TeamHwnd, , 2)
+    }
+}
+
+KeepTeamForeground(*) {
+    global TeamPresented, TeamHwnd
+    if (!TeamPresented || !TeamHwnd || !WinExist("ahk_id " TeamHwnd)) {
+        SetTimer(KeepTeamForeground, 0)
+        return
+    }
+    ForceTeamForeground(false)
 }
 
 StartScanFromTeamRequest(*) {
@@ -210,20 +246,23 @@ StartScanFromTeamRequest(*) {
 
     try {
         ; De gebruiker blijft alleen het zwarte teamvenster zien.
-        if (TeamHwnd && WinExist("ahk_id " TeamHwnd))
-            WinSetAlwaysOnTop(1, "ahk_id " TeamHwnd)
+        ForceTeamForeground(false)
 
         ; De compacte login-popup is expres klein. Voor de DOM-scan vergroten we WFM
         ; onzichtbaar erachter zodat de bekende desktop-layout beschikbaar is.
         PrepareWfmForScan(target)
+        ForceTeamForeground(false)
 
         A_Clipboard := SubStr(code, 12)
         if !ClipWait(2)
             throw Error("De scanner kon niet tijdelijk naar het klembord worden gezet.")
 
+        ; WFM krijgt alleen toetsenbordfocus. De topmost teamkiezer blijft visueel erboven.
         WinActivate("ahk_id " target)
         if !WinWaitActive("ahk_id " target, , 3)
             throw Error("Het WFM-venster kon niet actief worden gemaakt.")
+
+        ForceTeamForeground(false)
 
         Send("^l")
         Sleep(140)
@@ -236,8 +275,7 @@ StartScanFromTeamRequest(*) {
         try StatusText.Text := "6-weeks scan gestart"
 
         Sleep(120)
-        if (TeamHwnd && WinExist("ahk_id " TeamHwnd))
-            WinSetAlwaysOnTop(1, "ahk_id " TeamHwnd)
+        ForceTeamForeground(false)
     }
     catch Error as err {
         MsgBox("De scanner kon niet in WFM worden gestart.`n`n" err.Message, "WFM Bridge Helper")
@@ -277,6 +315,7 @@ IsEdgeWindow(hwnd) {
 ResetFlow() {
     global WfmHwnd, TeamHwnd, BaselineTitle, TitleCandidate, TitleCandidateTicks
     global ChangedCandidate, ChangedTicks, TeamPresented, LastHandledRequest, ScanBusy, StatusText
+    SetTimer(KeepTeamForeground, 0)
     WfmHwnd := 0
     TeamHwnd := 0
     BaselineTitle := ""
