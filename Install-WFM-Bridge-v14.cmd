@@ -31,7 +31,7 @@ curl.exe -fL --retry 2 --connect-timeout 15 -H "Cache-Control: no-cache" "%HELPE
 if errorlevel 1 goto :download_error
 if not exist "%HELPER%" goto :download_error
 
-set "AHK="n
+set "AHK="
 if exist "%ProgramFiles%\AutoHotkey\v2\AutoHotkey64.exe" set "AHK=%ProgramFiles%\AutoHotkey\v2\AutoHotkey64.exe"
 if not defined AHK if exist "%ProgramFiles%\AutoHotkey\v2\AutoHotkey.exe" set "AHK=%ProgramFiles%\AutoHotkey\v2\AutoHotkey.exe"
 if not defined AHK if exist "%LOCALAPPDATA%\Programs\AutoHotkey\v2\AutoHotkey64.exe" set "AHK=%LOCALAPPDATA%\Programs\AutoHotkey\v2\AutoHotkey64.exe"
