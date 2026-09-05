@@ -18,7 +18,7 @@ jobs:
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
-          if 'TESTVARIANT · Av24' not in s or 'version==="av24"' not in s:
+          if 'TESTVARIANT · Av24' not in s:
               raise SystemExit('Av24 baseline not found in index')
           s=s.replace('Av24','Av25').replace('av24','av25').replace('AV24','AV25')
           colors={
@@ -34,7 +34,7 @@ jobs:
           }
           for old,new in colors.items():
               s=s.replace(old,new)
-          if 'TESTVARIANT · Av24' in s or 'version==="av24"' in s:
+          if 'TESTVARIANT · Av24' in s:
               raise SystemExit('Old Av24 A-version remains')
           p.write_text(s,encoding='utf-8')
           PY
@@ -42,7 +42,7 @@ jobs:
           test "$(git diff --name-only)" = "index.html"
           grep -q 'TESTVARIANT · Av25' index.html
           grep -q 'Rooster · Av25' index.html
-          grep -q 'version==="av25"' index.html
+          grep -q "data.version==='av25'" index.html
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
