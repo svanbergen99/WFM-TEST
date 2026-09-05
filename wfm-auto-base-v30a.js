@@ -8,7 +8,7 @@ A.OVERLAY_ID='wfm-auto-overlay-v27';
 A.P=n=>String(n).padStart(2,'0');
 A.sleep=m=>new Promise(r=>setTimeout(r,m));
 A.MM={jan:1,feb:2,mrt:3,mar:3,apr:4,mei:5,may:5,jun:6,jul:7,aug:8,sep:9,okt:10,oct:10,nov:11,dec:12};
-A.running=false;A.done=false;
+A.running=false;A.done=false;A.CLICK_THROUGH_SCAN=true;
 A.ui={mode:'login',text:'🌟 Systeem actief! Vul nu je gegevens in en log in. 🌟',detail:'De scanner is actief. Na een geslaagde login wordt WFM automatisch afgedekt terwijl het rooster wordt opgehaald.',kind:'active',progress:null};
 A.target=()=>{try{const t=window.WFMAutoTarget;if(t&&!t.closed)return t;return window.opener&&!window.opener.closed?window.opener:null}catch(_){return null}};
 A.targetDoc=()=>{try{return A.target()?.document||null}catch(_){return null}};
@@ -48,20 +48,20 @@ A.paintOverlay=()=>{try{
   let href='';try{href=w.location.href}catch(_){}
   const loginPage=/\/wfm\/Login\.jsp/i.test(href),showLoginHole=loginPage&&A.ui.mode!=='processing';
   const topMask=root.querySelector('[data-wfm-mask="top"]'),leftMask=root.querySelector('[data-wfm-mask="left"]'),rightMask=root.querySelector('[data-wfm-mask="right"]'),bottomMask=root.querySelector('[data-wfm-mask="bottom"]'),frame=root.querySelector('[data-wfm-login-frame]');
-  const masks=[topMask,leftMask,rightMask,bottomMask];
-  const base='position:fixed;background:#000;pointer-events:auto;margin:0;padding:0;border:0;';
+  const blockingBase='position:fixed;background:#000;pointer-events:auto;margin:0;padding:0;border:0;';
+  const clickThroughBase='position:fixed;background:#000;pointer-events:none;margin:0;padding:0;border:0;';
   if(!showLoginHole){
-    topMask.style.cssText=base+'inset:0;';
+    topMask.style.cssText=(A.CLICK_THROUGH_SCAN?clickThroughBase:blockingBase)+'inset:0;';
     leftMask.style.cssText=rightMask.style.cssText=bottomMask.style.cssText='display:none';
     frame.style.cssText='display:none';
     return
   }
   let r=A.loginRect();
   if(!r){const ww=Math.min(540,Math.max(360,w.innerWidth*.42)),hh=Math.min(360,Math.max(240,w.innerHeight*.42)),left=(w.innerWidth-ww)/2,top=(w.innerHeight-hh)/2;r={left,top,right:left+ww,bottom:top+hh,width:ww,height:hh}}
-  topMask.style.cssText=base+`left:0;top:0;width:100%;height:${Math.max(0,r.top)}px;`;
-  bottomMask.style.cssText=base+`left:0;top:${Math.max(0,r.bottom)}px;width:100%;bottom:0;`;
-  leftMask.style.cssText=base+`left:0;top:${Math.max(0,r.top)}px;width:${Math.max(0,r.left)}px;height:${Math.max(0,r.height)}px;`;
-  rightMask.style.cssText=base+`left:${Math.max(0,r.right)}px;right:0;top:${Math.max(0,r.top)}px;height:${Math.max(0,r.height)}px;`;
+  topMask.style.cssText=blockingBase+`left:0;top:0;width:100%;height:${Math.max(0,r.top)}px;`;
+  bottomMask.style.cssText=blockingBase+`left:0;top:${Math.max(0,r.bottom)}px;width:100%;bottom:0;`;
+  leftMask.style.cssText=blockingBase+`left:0;top:${Math.max(0,r.top)}px;width:${Math.max(0,r.left)}px;height:${Math.max(0,r.height)}px;`;
+  rightMask.style.cssText=blockingBase+`left:${Math.max(0,r.right)}px;right:0;top:${Math.max(0,r.top)}px;height:${Math.max(0,r.height)}px;`;
   frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border:2px solid rgba(255,255,255,.72);border-radius:18px;box-shadow:0 0 0 1px rgba(0,0,0,.65);pointer-events:none;`;
 }catch(_){} };
 A.paintController=()=>{try{const s=document.getElementById('state'),d=document.getElementById('detail');if(s)s.textContent=A.ui.text;if(d)d.textContent=A.ui.detail||''}catch(_){} };
