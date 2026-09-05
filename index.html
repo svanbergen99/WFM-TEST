@@ -55,7 +55,7 @@ const WEEKDAYS=['ma','di','wo','do','vr','za','zo'];
 const start=document.getElementById('start'),content=document.getElementById('content'),status=document.getElementById('status'),result=document.getElementById('result'),openButton=document.getElementById('openWfm'),bookmarklet=document.getElementById('bookmarklet'),copyBookmarklet=document.getElementById('copyBookmarklet'),bookmarkletNote=document.getElementById('bookmarkletNote');
 let wfmWindow=null,scannerHelperWindow=null,bookmarkletCode='',guideWindow=null,currentScanMessage=null,currentMonthIndex=0;
 window.name='wfmTestReceiver';
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function safeWfmColor(v){return /^#[0-9a-f]{6}$/i.test(String(v||''))?String(v):'#dbe2ea'}
 function contrastText(hex){const h=safeWfmColor(hex).slice(1),r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16),l=.299*r+.587*g+.114*b;return l>155?'#111827':'#fff'}
 function todayKey(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),g=t=>p.find(x=>x.type===t)?.value||'';return`${g('year')}-${g('month')}-${g('day')}`}
