@@ -1,0 +1,97 @@
+name: Temporary Av27 login spotlight update
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-av27-login-spotlight.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply Av27
+        shell: bash
+        run: |
+          set -e
+          python - <<'PY'
+          from pathlib import Path
+
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          if 'TESTVARIANT · Av26' not in s or "data.version==='av26'" not in s:
+              raise SystemExit('Expected Av26 A-test baseline not found in index.html')
+          s=s.replace('Av26','Av27').replace('AV26','AV27').replace('av26','av27')
+          colors={
+              '#ea580c':'#166534',
+              '#f97316':'#22c55e',
+              '#c2410c':'#15803d',
+              '#ffedd5':'#dcfce7',
+              '#fdba74':'#86efac',
+              'rgba(234,88,12,.25)':'rgba(22,101,52,.25)',
+              'rgba(194,65,12,.14)':'rgba(21,128,61,.14)',
+              'rgba(249,115,22,.26)':'rgba(34,197,94,.26)',
+              'rgba(249,115,22,.32)':'rgba(34,197,94,.32)'
+          }
+          for old,new in colors.items():
+              s=s.replace(old,new)
+          p.write_text(s,encoding='utf-8')
+
+          p=Path('WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt')
+          s=p.read_text(encoding='utf-8')
+          if 'WFM Scanner Av26' not in s or 'version:"av26"' not in s:
+              raise SystemExit('Expected Av26 bookmarklet baseline not found')
+          s=s.replace('Av26','Av27').replace('AV26','AV27').replace('av26','av27')
+          p.write_text(s,encoding='utf-8')
+
+          p=Path('wfm-auto-base-v30a.js')
+          s=p.read_text(encoding='utf-8')
+          old="""  const form=pwd.closest('form')||d;
+          const inputs=[...form.querySelectorAll('input')].filter(e=>e!==pwd&&!['hidden','password','submit','button','checkbox','radio'].includes(String(e.type||'text').toLowerCase())&&A.visible(e,w));
+          const user=inputs[0]||null;
+          const buttons=[...form.querySelectorAll('button,input[type=\"submit\"],input[type=\"button\"]')].filter(e=>A.visible(e,w));
+          const submit=buttons.find(e=>/log\\s*in|login|sign\\s*in|aanmeld/i.test(A.txt(e)))||buttons.find(e=>String(e.type||'').toLowerCase()==='submit')||buttons[0]||null;
+          """
+          new="""  const form=pwd.closest('form')||d,pr=pwd.getBoundingClientRect(),pc=(pr.left+pr.right)/2;
+          const inputs=[...d.querySelectorAll('input')].filter(e=>e!==pwd&&!['hidden','password','submit','button','checkbox','radio'].includes(String(e.type||'text').toLowerCase())&&A.visible(e,w));
+          const userCandidates=inputs.map(e=>({e,r:e.getBoundingClientRect()})).filter(x=>x.r.bottom<=pr.top+28&&pr.top-x.r.top<190&&x.r.right>=pr.left-70&&x.r.left<=pr.right+70&&Math.abs((x.r.left+x.r.right)/2-pc)<=Math.max(130,pr.width*.8)).sort((a,b)=>(pr.top-b.r.bottom)-(pr.top-a.r.bottom));
+          const user=userCandidates[0]?.e||inputs.find(e=>{const r=e.getBoundingClientRect();return r.bottom<=pr.top+28&&r.right>=pr.left&&r.left<=pr.right})||null;
+          const buttons=[...d.querySelectorAll('button,input[type=\"submit\"],input[type=\"button\"],[role=\"button\"]')].filter(e=>A.visible(e,w));
+          const buttonCandidates=buttons.map(e=>({e,r:e.getBoundingClientRect()})).filter(x=>x.r.top>=pr.bottom-12&&x.r.top<=pr.bottom+220&&x.r.right>=pr.left-55&&x.r.left<=pr.right+55&&Math.abs((x.r.left+x.r.right)/2-pc)<=Math.max(135,pr.width*.85)).sort((a,b)=>(a.r.top-pr.bottom)-(b.r.top-pr.bottom)||Math.abs((a.r.left+a.r.right)/2-pc)-Math.abs((b.r.left+b.r.right)/2-pc));
+          const submit=(buttonCandidates.find(x=>/log\\s*in|login|sign\\s*in|aanmeld/i.test(A.txt(x.e)))||buttonCandidates.find(x=>String(x.e.type||'').toLowerCase()==='submit')||buttonCandidates[0])?.e||null;
+          """
+          if old not in s:
+              raise SystemExit('Expected Av26 login anchor block not found')
+          s=s.replace(old,new,1)
+          s=s.replace("let width=Math.max(390,coreWidth+76);width=Math.min(width,460,Math.max(280,w.innerWidth-28));","let width=Math.max(360,coreWidth+72);width=Math.min(width,420,Math.max(280,w.innerWidth-28));",1)
+          s=s.replace("let top=coreTop-225,bottom=coreBottom+52;","let top=coreTop-245,bottom=coreBottom+50;",1)
+          s=s.replace("if(bottom-top<400){const need=400-(bottom-top)","if(bottom-top<430){const need=430-(bottom-top)",1)
+          s=s.replace("const blockingBase='position:fixed;background:#000;pointer-events:auto;margin:0;padding:0;border:0;z-index:1;';","const blockingBase='position:fixed;background:#2a1636;pointer-events:auto;margin:0;padding:0;border:0;z-index:1;';",1)
+          s=s.replace("const clickThroughBase='position:fixed;background:#000;pointer-events:none;margin:0;padding:0;border:0;z-index:1;';","const clickThroughBase='position:fixed;background:#2a1636;pointer-events:none;margin:0;padding:0;border:0;z-index:1;';",1)
+          old_style="frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(255,237,213,.58);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 0 30px rgba(251,146,60,.18),0 18px 52px rgba(0,0,0,.34),0 0 0 9999px #000;pointer-events:none;z-index:2;`;"
+          new_style="frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(220,252,231,.62);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 0 30px rgba(74,222,128,.18),0 18px 52px rgba(0,0,0,.34),0 0 0 9999px #2a1636;pointer-events:none;z-index:2;`;"
+          if old_style not in s:
+              raise SystemExit('Expected Av26 spotlight style not found')
+          s=s.replace(old_style,new_style,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+
+          node --check wfm-auto-base-v30a.js
+          git diff --check
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' 'WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt' 'index.html' 'wfm-auto-base-v30a.js' | sort)"
+          test "$changed" = "$expected"
+          grep -q 'TESTVARIANT · Av27' index.html
+          grep -q "data.version==='av27'" index.html
+          grep -q 'WFM Scanner Av27' WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt
+          grep -q 'version:"av27"' WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt
+          grep -q 'background:#2a1636' wfm-auto-base-v30a.js
+          grep -q 'let width=Math.max(360,coreWidth+72)' wfm-auto-base-v30a.js
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt wfm-auto-base-v30a.js
+          git commit -m 'Av27: tighten login anchors and recolor overlay'
+          git push origin main
