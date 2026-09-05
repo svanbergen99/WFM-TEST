@@ -1,0 +1,130 @@
+name: Temporary Av28 center login update
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-av28-center-login.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply Av28
+        shell: bash
+        run: |
+          set -e
+          python - <<'PY'
+          from pathlib import Path
+
+          # A-test page only: version bump + a clearly different accent.
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          if 'TESTVARIANT · Av27' not in s or "data.version==='av27'" not in s:
+              raise SystemExit('Expected Av27 A-test baseline not found in index.html')
+          s=s.replace('Av27','Av28').replace('AV27','AV28').replace('av27','av28')
+          colors={
+              '#166534':'#be123c',
+              '#22c55e':'#e11d48',
+              '#15803d':'#9f1239',
+              '#dcfce7':'#ffe4e6',
+              '#86efac':'#fda4af',
+              'rgba(22,101,52,.25)':'rgba(190,18,60,.25)',
+              'rgba(21,128,61,.14)':'rgba(159,18,57,.14)',
+              'rgba(34,197,94,.26)':'rgba(225,29,72,.26)',
+              'rgba(34,197,94,.32)':'rgba(225,29,72,.32)'
+          }
+          for old,new in colors.items():
+              s=s.replace(old,new)
+          p.write_text(s,encoding='utf-8')
+
+          # Static A favorite: bump to Av28.
+          p=Path('WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt')
+          s=p.read_text(encoding='utf-8')
+          if 'WFM Scanner Av27' not in s or 'version:"av27"' not in s:
+              raise SystemExit('Expected Av27 bookmarklet baseline not found')
+          s=s.replace('Av27','Av28').replace('AV27','AV28').replace('av27','av28')
+          p.write_text(s,encoding='utf-8')
+
+          # Visual A-base only. Shift the actual WFM login app horizontally,
+          # while keeping the overlay itself outside that shifted app root.
+          p=Path('wfm-auto-base-v30a.js')
+          s=p.read_text(encoding='utf-8')
+          if "A.OVERLAY_ID='wfm-auto-overlay-v27';" not in s:
+              raise SystemExit('Expected Av27 overlay id not found')
+          s=s.replace("A.OVERLAY_ID='wfm-auto-overlay-v27';","A.OVERLAY_ID='wfm-auto-overlay-v28';",1)
+
+          anchor='A.loginRect=()=>{try{\n'
+          if anchor not in s:
+              raise SystemExit('loginRect anchor not found')
+          helpers=r'''A.restoreLoginShift=()=>{try{
+  const d=A.targetDoc();if(!d)return;
+  const node=d.querySelector('[data-wfm-auto-shift-x]');if(!node)return;
+  const old=node.dataset.wfmAutoOrigTranslate||'';
+  if(old)node.style.setProperty('translate',old,'important');else node.style.removeProperty('translate');
+  delete node.dataset.wfmAutoShiftX;delete node.dataset.wfmAutoOrigTranslate
+}catch(_){} };
+A.centerLoginShift=()=>{try{
+  const w=A.target(),d=A.targetDoc();if(!w||!d)return null;
+  const pwd=d.querySelector('input[type="password"]');if(!pwd||!A.visible(pwd,w))return null;
+  let node=pwd;while(node.parentElement&&node.parentElement!==d.body)node=node.parentElement;
+  if(!node||node===d.body||node.id===A.OVERLAY_ID)return null;
+  if(!node.hasAttribute('data-wfm-auto-shift-x'))node.dataset.wfmAutoOrigTranslate=node.style.translate||'';
+  const pr=pwd.getBoundingClientRect(),current=Number(node.dataset.wfmAutoShiftX||0)||0;
+  const delta=w.innerWidth/2-(pr.left+pr.right)/2;
+  const next=Math.max(-220,Math.min(220,current+delta));
+  node.dataset.wfmAutoShiftX=String(next);
+  node.style.setProperty('translate',`${next}px 0`,'important');
+  return node
+}catch(_){return null}};
+'''
+          s=s.replace(anchor,helpers+anchor,1)
+
+          old="const center=(coreLeft+coreRight)/2,coreWidth=coreRight-coreLeft;"
+          new="const center=w.innerWidth/2,coreWidth=coreRight-coreLeft;"
+          if old not in s:
+              raise SystemExit('Expected Av27 center calculation not found')
+          s=s.replace(old,new,1)
+
+          old="const loginPage=/\\/wfm\\/Login\\.jsp/i.test(href),processing=A.ui.mode==='processing',showLoginHole=loginPage&&!processing;"
+          new="const loginPage=/\\/wfm\\/Login\\.jsp/i.test(href),processing=A.ui.mode==='processing',showLoginHole=loginPage&&!processing;\n  if(showLoginHole)A.centerLoginShift();else A.restoreLoginShift();"
+          if old not in s:
+              raise SystemExit('Expected showLoginHole line not found')
+          s=s.replace(old,new,1)
+
+          # New overlay background color for visual version confirmation.
+          s=s.replace("background:#2a1636;pointer-events:auto","background:#083344;pointer-events:auto",1)
+          s=s.replace("background:#2a1636;pointer-events:none","background:#083344;pointer-events:none",1)
+          s=s.replace("0 0 0 9999px #2a1636;pointer-events:none","0 0 0 9999px #083344;pointer-events:none",1)
+          s=s.replace("rgba(220,252,231,.62)","rgba(255,228,230,.62)",1)
+          s=s.replace("rgba(74,222,128,.18)","rgba(251,113,133,.18)",1)
+
+          old="A.removeOverlay=()=>{try{A.targetDoc()?.getElementById(A.OVERLAY_ID)?.remove()}catch(_){} };"
+          new="A.removeOverlay=()=>{try{A.restoreLoginShift();A.targetDoc()?.getElementById(A.OVERLAY_ID)?.remove()}catch(_){} };"
+          if old not in s:
+              raise SystemExit('Expected removeOverlay line not found')
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+
+          node --check wfm-auto-base-v30a.js
+          git diff --check
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' 'WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt' 'index.html' 'wfm-auto-base-v30a.js' | sort)"
+          test "$changed" = "$expected"
+          grep -q 'TESTVARIANT · Av28' index.html
+          grep -q "data.version==='av28'" index.html
+          grep -q 'WFM Scanner Av28' WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt
+          grep -q 'version:"av28"' WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt
+          grep -q "A.OVERLAY_ID='wfm-auto-overlay-v28'" wfm-auto-base-v30a.js
+          grep -q 'A.centerLoginShift' wfm-auto-base-v30a.js
+          grep -q 'const center=w.innerWidth/2' wfm-auto-base-v30a.js
+          grep -q 'background:#083344' wfm-auto-base-v30a.js
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt wfm-auto-base-v30a.js
+          git commit -m 'Av28: center WFM login content and spotlight'
+          git push origin main
