@@ -4,20 +4,21 @@ const A=window.WFMAuto=window.WFMAuto||{};
 A.TEST_ORIGIN='https://svanbergen99.github.io';
 A.TEST_URL='https://svanbergen99.github.io/WFM-TEST/';
 A.VIDEO_URL=A.TEST_URL+'ff%20wachte.mp4';
-A.OVERLAY_ID='wfm-auto-overlay-v31';
+A.OVERLAY_ID='wfm-auto-overlay-v32';
 A.P=n=>String(n).padStart(2,'0');
 A.sleep=m=>new Promise(r=>setTimeout(r,m));
 A.MM={jan:1,feb:2,mrt:3,mar:3,apr:4,mei:5,may:5,jun:6,jul:7,aug:8,sep:9,okt:10,oct:10,nov:11,dec:12};
-A.running=false;A.done=false;A.CLICK_THROUGH_SCAN=true;
+A.running=false;A.done=false;A.CLICK_THROUGH_SCAN=true;A.transitionMediaTime=0;A.transitionPaintTimer=null;
 A.ui={mode:'login',text:'🌟 Systeem actief! Vul nu je gegevens in en log in. 🌟',detail:'De scanner is actief. Na een geslaagde login wordt WFM automatisch afgedekt terwijl het rooster wordt opgehaald.',kind:'active',progress:null};
 A.target=()=>{try{const t=window.WFMAutoTarget;if(t&&!t.closed)return t;return window.opener&&!window.opener.closed?window.opener:null}catch(_){return null}};
 A.targetDoc=()=>{try{return A.target()?.document||null}catch(_){return null}};
 A.receiver=()=>{try{const t=A.target();return t&&t.opener&&!t.opener.closed?t.opener:null}catch(_){return null}};
 A.txt=e=>String(e?.innerText||e?.textContent||e?.value||'').replace(/\s+/g,' ').trim();
+window.addEventListener('message',e=>{try{if(e.origin!==A.TEST_ORIGIN)return;const m=e.data||{};if(m.type==='wfm-transition-media-time'&&Number.isFinite(Number(m.currentTime)))A.transitionMediaTime=Number(m.currentTime)||0}catch(_){}});
 A.overlayTemplate=d=>{
   const root=d.createElement('div');root.id=A.OVERLAY_ID;
   root.innerHTML='<div data-wfm-mask="top"></div><div data-wfm-mask="left"></div><div data-wfm-mask="right"></div><div data-wfm-mask="bottom"></div><div data-wfm-login-frame></div><video data-wfm-video playsinline preload="auto"></video>';
-  const video=root.querySelector('[data-wfm-video]');if(video){video.src=A.VIDEO_URL;video.muted=false;video.defaultMuted=false;video.volume=1;video.loop=false;video.playsInline=true;}
+  const video=root.querySelector('[data-wfm-video]');if(video){video.src=A.VIDEO_URL;video.preload='auto';video.muted=true;video.defaultMuted=true;video.volume=0;video.loop=false;video.playsInline=true;try{video.load()}catch(_){}}
   try{(d.body||d.documentElement).appendChild(root)}catch(_){}
   return root
 };
@@ -72,15 +73,16 @@ A.paintOverlay=()=>{try{
   root.style.cssText='position:fixed;inset:0;z-index:2147483647;pointer-events:none;font-family:Segoe UI,Arial,sans-serif';
   let href='';try{href=w.location.href}catch(_){}
   const loginPage=/\/wfm\/Login\.jsp/i.test(href),processing=A.ui.mode==='processing',showLoginHole=loginPage&&!processing;
+  if(processing){try{d.documentElement?.style.setProperty('background','#102a1f','important');d.body?.style.setProperty('background','#102a1f','important')}catch(_){}}
   if(showLoginHole)A.centerLoginShift();else A.restoreLoginShift();
   const topMask=root.querySelector('[data-wfm-mask="top"]'),leftMask=root.querySelector('[data-wfm-mask="left"]'),rightMask=root.querySelector('[data-wfm-mask="right"]'),bottomMask=root.querySelector('[data-wfm-mask="bottom"]'),frame=root.querySelector('[data-wfm-login-frame]'),video=root.querySelector('[data-wfm-video]');
-  const blockingBase='position:fixed;background:#2a1038;pointer-events:auto;margin:0;padding:0;border:0;z-index:1;';
-  const clickThroughBase='position:fixed;background:#2a1038;pointer-events:none;margin:0;padding:0;border:0;z-index:1;';
+  const blockingBase='position:fixed;background:#102a1f;pointer-events:auto;margin:0;padding:0;border:0;z-index:1;';
+  const clickThroughBase='position:fixed;background:#102a1f;pointer-events:none;margin:0;padding:0;border:0;z-index:1;';
   if(!showLoginHole){
     topMask.style.cssText=((processing&&A.CLICK_THROUGH_SCAN)?clickThroughBase:blockingBase)+'inset:0;';
     leftMask.style.cssText=rightMask.style.cssText=bottomMask.style.cssText='display:none';
     frame.style.cssText='display:none';
-    if(video){video.style.cssText=processing?'display:block;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(980px,92vw);max-height:calc(100vh - 48px);object-fit:contain;border-radius:24px;background:#000;pointer-events:none;z-index:2':'display:none';if(processing){video.muted=false;video.defaultMuted=false;video.volume=1;if(video.paused&&!video.ended){try{const p=video.play();p?.catch?.(()=>{})}catch(_){}}}else{try{video.pause();if(video.currentTime)video.currentTime=0}catch(_){}}}
+    if(video){video.style.cssText=processing?'display:block;position:fixed;inset:0;width:100vw;height:100vh;max-width:none;max-height:none;object-fit:cover;border-radius:0;background:#102a1f;pointer-events:none;z-index:2':'display:none';if(processing){video.muted=true;video.defaultMuted=true;video.volume=0;const mt=Number(A.transitionMediaTime)||0;try{if(mt>0&&Math.abs((video.currentTime||0)-mt)>.30&&!video.seeking)video.currentTime=mt}catch(_){}if(video.paused&&!video.ended){try{const p=video.play();p?.catch?.(()=>{})}catch(_){}}}else{try{video.pause();if(video.currentTime)video.currentTime=0}catch(_){}}}
     return
   }
   if(video){video.style.cssText='display:none';try{video.pause();if(video.currentTime)video.currentTime=0}catch(_){}}
@@ -92,15 +94,15 @@ A.paintOverlay=()=>{try{
   leftMask.style.cssText=guardBase+`left:0;top:${Math.max(0,r.top)}px;width:${Math.max(0,r.left)}px;height:${Math.max(0,r.height)}px;`;
   rightMask.style.cssText=guardBase+`left:${Math.max(0,r.right)}px;right:0;top:${Math.max(0,r.top)}px;height:${Math.max(0,r.height)}px;`;
   const radius=Math.min(64,Math.max(44,r.width*.13));
-  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(204,251,241,.62);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 0 30px rgba(94,234,212,.18),0 18px 52px rgba(0,0,0,.34),0 0 0 9999px #2a1038;pointer-events:none;z-index:2;`;
+  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(255,228,230,.62);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 0 30px rgba(253,164,175,.18),0 18px 52px rgba(0,0,0,.34),0 0 0 9999px #102a1f;pointer-events:none;z-index:2;`;
 }catch(_){} };
 A.paintController=()=>{try{const s=document.getElementById('state'),d=document.getElementById('detail');if(s)s.textContent=A.ui.text;if(d)d.textContent=A.ui.detail||''}catch(_){} };
 A.report=()=>{try{A.receiver()?.postMessage({type:'wfm-scanner-status',mode:A.ui.mode,text:A.ui.text,detail:A.ui.detail,kind:A.ui.kind,progress:A.ui.progress},A.TEST_ORIGIN)}catch(_){} };
 A.paint=()=>{A.paintController();A.paintOverlay()};
-A.setMode=mode=>{A.ui.mode=mode||'login';A.paint();A.report()};
+A.setMode=mode=>{A.ui.mode=mode||'login';if(A.ui.mode==='processing'){if(!A.transitionPaintTimer)A.transitionPaintTimer=setInterval(()=>A.paintOverlay(),16)}else if(A.transitionPaintTimer){clearInterval(A.transitionPaintTimer);A.transitionPaintTimer=null}A.paint();A.report()};
 A.setState=(text,detail,kind='active')=>{A.ui.text=text||'';A.ui.detail=detail||'';A.ui.kind=kind;A.paint();A.report()};
 A.setProgress=stage=>{A.ui.progress=stage||null;A.paint();A.report()};
-A.removeOverlay=()=>{try{A.restoreLoginShift();A.targetDoc()?.getElementById(A.OVERLAY_ID)?.remove()}catch(_){} };
+A.removeOverlay=()=>{try{if(A.transitionPaintTimer){clearInterval(A.transitionPaintTimer);A.transitionPaintTimer=null}A.restoreLoginShift();A.targetDoc()?.getElementById(A.OVERLAY_ID)?.remove()}catch(_){} };
 A.announce=()=>{try{A.receiver()?.postMessage({type:'wfm-scanner-helper-ready'},A.TEST_ORIGIN)}catch(_){} };
 A.announce();A.report();A.announceTimer=setInterval(()=>{A.announce();A.report();A.paintOverlay()},500);
 A.visible=(e,w)=>{if(!e||!w)return false;const s=w.getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0};
