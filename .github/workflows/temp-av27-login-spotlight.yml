@@ -48,13 +48,9 @@ jobs:
 
           p=Path('wfm-auto-base-v30a.js')
           s=p.read_text(encoding='utf-8')
-          old="""  const form=pwd.closest('form')||d;
-          const inputs=[...form.querySelectorAll('input')].filter(e=>e!==pwd&&!['hidden','password','submit','button','checkbox','radio'].includes(String(e.type||'text').toLowerCase())&&A.visible(e,w));
-          const user=inputs[0]||null;
-          const buttons=[...form.querySelectorAll('button,input[type=\"submit\"],input[type=\"button\"]')].filter(e=>A.visible(e,w));
-          const submit=buttons.find(e=>/log\\s*in|login|sign\\s*in|aanmeld/i.test(A.txt(e)))||buttons.find(e=>String(e.type||'').toLowerCase()==='submit')||buttons[0]||null;
-          """
-          new="""  const form=pwd.closest('form')||d,pr=pwd.getBoundingClientRect(),pc=(pr.left+pr.right)/2;
+          anchor_start=s.index("  const form=pwd.closest('form')||d;")
+          anchor_end=s.index("  const core=[user,pwd,submit].filter(Boolean);",anchor_start)
+          new_block="""  const form=pwd.closest('form')||d,pr=pwd.getBoundingClientRect(),pc=(pr.left+pr.right)/2;
           const inputs=[...d.querySelectorAll('input')].filter(e=>e!==pwd&&!['hidden','password','submit','button','checkbox','radio'].includes(String(e.type||'text').toLowerCase())&&A.visible(e,w));
           const userCandidates=inputs.map(e=>({e,r:e.getBoundingClientRect()})).filter(x=>x.r.bottom<=pr.top+28&&pr.top-x.r.top<190&&x.r.right>=pr.left-70&&x.r.left<=pr.right+70&&Math.abs((x.r.left+x.r.right)/2-pc)<=Math.max(130,pr.width*.8)).sort((a,b)=>(pr.top-b.r.bottom)-(pr.top-a.r.bottom));
           const user=userCandidates[0]?.e||inputs.find(e=>{const r=e.getBoundingClientRect();return r.bottom<=pr.top+28&&r.right>=pr.left&&r.left<=pr.right})||null;
@@ -62,9 +58,7 @@ jobs:
           const buttonCandidates=buttons.map(e=>({e,r:e.getBoundingClientRect()})).filter(x=>x.r.top>=pr.bottom-12&&x.r.top<=pr.bottom+220&&x.r.right>=pr.left-55&&x.r.left<=pr.right+55&&Math.abs((x.r.left+x.r.right)/2-pc)<=Math.max(135,pr.width*.85)).sort((a,b)=>(a.r.top-pr.bottom)-(b.r.top-pr.bottom)||Math.abs((a.r.left+a.r.right)/2-pc)-Math.abs((b.r.left+b.r.right)/2-pc));
           const submit=(buttonCandidates.find(x=>/log\\s*in|login|sign\\s*in|aanmeld/i.test(A.txt(x.e)))||buttonCandidates.find(x=>String(x.e.type||'').toLowerCase()==='submit')||buttonCandidates[0])?.e||null;
           """
-          if old not in s:
-              raise SystemExit('Expected Av26 login anchor block not found')
-          s=s.replace(old,new,1)
+          s=s[:anchor_start]+new_block+s[anchor_end:]
           s=s.replace("let width=Math.max(390,coreWidth+76);width=Math.min(width,460,Math.max(280,w.innerWidth-28));","let width=Math.max(360,coreWidth+72);width=Math.min(width,420,Math.max(280,w.innerWidth-28));",1)
           s=s.replace("let top=coreTop-225,bottom=coreBottom+52;","let top=coreTop-245,bottom=coreBottom+50;",1)
           s=s.replace("if(bottom-top<400){const need=400-(bottom-top)","if(bottom-top<430){const need=430-(bottom-top)",1)
