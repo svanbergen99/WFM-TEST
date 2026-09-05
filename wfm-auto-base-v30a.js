@@ -16,7 +16,8 @@ A.receiver=()=>{try{const t=A.target();return t&&t.opener&&!t.opener.closed?t.op
 A.txt=e=>String(e?.innerText||e?.textContent||e?.value||'').replace(/\s+/g,' ').trim();
 A.overlayTemplate=d=>{
   const root=d.createElement('div');root.id=A.OVERLAY_ID;
-  root.innerHTML='<div data-wfm-mask="top"></div><div data-wfm-mask="left"></div><div data-wfm-mask="right"></div><div data-wfm-mask="bottom"></div><div data-wfm-login-frame></div>';
+  root.innerHTML='<div data-wfm-mask="top"></div><div data-wfm-mask="left"></div><div data-wfm-mask="right"></div><div data-wfm-mask="bottom"></div><div data-wfm-login-frame></div><video data-wfm-video playsinline preload="auto"></video>';
+  const video=root.querySelector('[data-wfm-video]');if(video){video.src=A.VIDEO_URL;video.muted=false;video.defaultMuted=false;video.volume=1;video.loop=false;video.playsInline=true;}
   try{(d.body||d.documentElement).appendChild(root)}catch(_){}
   return root
 };
@@ -34,10 +35,10 @@ A.loginRect=()=>{try{
   if(!nodes.length)return null;
   const rs=nodes.map(e=>e.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);
   if(!rs.length)return null;
-  let left=Math.min(...rs.map(r=>r.left))-42,right=Math.max(...rs.map(r=>r.right))+42,top=Math.min(...rs.map(r=>r.top))-48,bottom=Math.max(...rs.map(r=>r.bottom))+42;
+  let left=Math.min(...rs.map(r=>r.left))-60,right=Math.max(...rs.map(r=>r.right))+60,top=Math.min(...rs.map(r=>r.top))-215,bottom=Math.max(...rs.map(r=>r.bottom))+55;
   left=Math.max(12,left);top=Math.max(12,top);right=Math.min(w.innerWidth-12,right);bottom=Math.min(w.innerHeight-12,bottom);
-  if(right-left<320){const c=(left+right)/2;left=Math.max(12,c-160);right=Math.min(w.innerWidth-12,c+160)}
-  if(bottom-top<190){const c=(top+bottom)/2;top=Math.max(12,c-95);bottom=Math.min(w.innerHeight-12,c+95)}
+  if(right-left<420){const c=(left+right)/2;left=Math.max(12,c-210);right=Math.min(w.innerWidth-12,c+210)}
+  if(bottom-top<440){const c=(top+bottom)/2;top=Math.max(12,c-220);bottom=Math.min(w.innerHeight-12,c+220)}
   return{left,top,right,bottom,width:right-left,height:bottom-top}
 }catch(_){return null}};
 A.paintOverlay=()=>{try{
@@ -46,23 +47,25 @@ A.paintOverlay=()=>{try{
   const root=A.ensureOverlay();if(!root)return;
   root.style.cssText='position:fixed;inset:0;z-index:2147483647;pointer-events:none;font-family:Segoe UI,Arial,sans-serif';
   let href='';try{href=w.location.href}catch(_){}
-  const loginPage=/\/wfm\/Login\.jsp/i.test(href),showLoginHole=loginPage&&A.ui.mode!=='processing';
-  const topMask=root.querySelector('[data-wfm-mask="top"]'),leftMask=root.querySelector('[data-wfm-mask="left"]'),rightMask=root.querySelector('[data-wfm-mask="right"]'),bottomMask=root.querySelector('[data-wfm-mask="bottom"]'),frame=root.querySelector('[data-wfm-login-frame]');
-  const blockingBase='position:fixed;background:#000;pointer-events:auto;margin:0;padding:0;border:0;';
-  const clickThroughBase='position:fixed;background:#000;pointer-events:none;margin:0;padding:0;border:0;';
+  const loginPage=/\/wfm\/Login\.jsp/i.test(href),processing=A.ui.mode==='processing',showLoginHole=loginPage&&!processing;
+  const topMask=root.querySelector('[data-wfm-mask="top"]'),leftMask=root.querySelector('[data-wfm-mask="left"]'),rightMask=root.querySelector('[data-wfm-mask="right"]'),bottomMask=root.querySelector('[data-wfm-mask="bottom"]'),frame=root.querySelector('[data-wfm-login-frame]'),video=root.querySelector('[data-wfm-video]');
+  const blockingBase='position:fixed;background:#000;pointer-events:auto;margin:0;padding:0;border:0;z-index:1;';
+  const clickThroughBase='position:fixed;background:#000;pointer-events:none;margin:0;padding:0;border:0;z-index:1;';
   if(!showLoginHole){
-    topMask.style.cssText=(A.CLICK_THROUGH_SCAN?clickThroughBase:blockingBase)+'inset:0;';
+    topMask.style.cssText=((processing&&A.CLICK_THROUGH_SCAN)?clickThroughBase:blockingBase)+'inset:0;';
     leftMask.style.cssText=rightMask.style.cssText=bottomMask.style.cssText='display:none';
     frame.style.cssText='display:none';
+    if(video){video.style.cssText=processing?'display:block;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(980px,92vw);max-height:calc(100vh - 48px);object-fit:contain;border-radius:24px;background:#000;pointer-events:none;z-index:2':'display:none';if(processing){video.muted=false;video.defaultMuted=false;video.volume=1;if(video.paused&&!video.ended){try{const p=video.play();p?.catch?.(()=>{})}catch(_){}}}else{try{video.pause();if(video.currentTime)video.currentTime=0}catch(_){}}}
     return
   }
+  if(video){video.style.cssText='display:none';try{video.pause();if(video.currentTime)video.currentTime=0}catch(_){}}
   let r=A.loginRect();
-  if(!r){const ww=Math.min(540,Math.max(360,w.innerWidth*.42)),hh=Math.min(360,Math.max(240,w.innerHeight*.42)),left=(w.innerWidth-ww)/2,top=(w.innerHeight-hh)/2;r={left,top,right:left+ww,bottom:top+hh,width:ww,height:hh}}
+  if(!r){const ww=Math.min(620,Math.max(420,w.innerWidth*.48)),hh=Math.min(500,Math.max(440,w.innerHeight*.58)),left=(w.innerWidth-ww)/2,top=(w.innerHeight-hh)/2;r={left,top,right:left+ww,bottom:top+hh,width:ww,height:hh}}
   topMask.style.cssText=blockingBase+`left:0;top:0;width:100%;height:${Math.max(0,r.top)}px;`;
   bottomMask.style.cssText=blockingBase+`left:0;top:${Math.max(0,r.bottom)}px;width:100%;bottom:0;`;
   leftMask.style.cssText=blockingBase+`left:0;top:${Math.max(0,r.top)}px;width:${Math.max(0,r.left)}px;height:${Math.max(0,r.height)}px;`;
   rightMask.style.cssText=blockingBase+`left:${Math.max(0,r.right)}px;right:0;top:${Math.max(0,r.top)}px;height:${Math.max(0,r.height)}px;`;
-  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border:2px solid rgba(255,255,255,.72);border-radius:18px;box-shadow:0 0 0 1px rgba(0,0,0,.65);pointer-events:none;`;
+  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border:2px solid rgba(255,255,255,.72);border-radius:18px;box-shadow:0 0 0 1px rgba(0,0,0,.65);pointer-events:none;z-index:2;`;
 }catch(_){} };
 A.paintController=()=>{try{const s=document.getElementById('state'),d=document.getElementById('detail');if(s)s.textContent=A.ui.text;if(d)d.textContent=A.ui.detail||''}catch(_){} };
 A.report=()=>{try{A.receiver()?.postMessage({type:'wfm-scanner-status',mode:A.ui.mode,text:A.ui.text,detail:A.ui.detail,kind:A.ui.kind,progress:A.ui.progress},A.TEST_ORIGIN)}catch(_){} };
