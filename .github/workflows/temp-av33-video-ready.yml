@@ -1,0 +1,100 @@
+name: Temporary Av33 video-ready updater
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/temp-av33-video-ready.yml"
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply Av33
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          # Version bump + clearly different A accent only.
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          if 'TESTVARIANT · Av32' not in s or "data.version==='av32'" not in s:
+              raise SystemExit('Expected Av32 baseline not found in index.html')
+          s=s.replace('Av32','Av33').replace('AV32','AV33').replace('av32','av33')
+          colors={
+            '#be123c':'#1d4ed8', '#e11d48':'#2563eb', '#9f1239':'#1e40af',
+            '#ffe4e6':'#dbeafe', '#fda4af':'#93c5fd',
+            'rgba(190,18,60,.25)':'rgba(29,78,216,.25)',
+            'rgba(159,18,57,.14)':'rgba(30,64,175,.14)',
+            'rgba(225,29,72,.26)':'rgba(37,99,235,.26)',
+            'rgba(225,29,72,.32)':'rgba(37,99,235,.32)'
+          }
+          for old,new in colors.items(): s=s.replace(old,new)
+          p.write_text(s,encoding='utf-8')
+
+          p=Path('WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt')
+          s=p.read_text(encoding='utf-8')
+          if 'WFM Scanner Av32' not in s or 'version:"av32"' not in s:
+              raise SystemExit('Expected Av32 bookmarklet baseline not found')
+          s=s.replace('Av32','Av33').replace('AV32','AV33').replace('av32','av33')
+          p.write_text(s,encoding='utf-8')
+
+          # Only functional change: preload the visual MP4 in the persistent helper
+          # while the user is still on the login screen, so it is already buffered
+          # when processing mode starts after login/navigation.
+          p=Path('wfm-auto-base-v30a.js')
+          s=p.read_text(encoding='utf-8')
+          if "A.OVERLAY_ID='wfm-auto-overlay-v32';" not in s:
+              raise SystemExit('Expected Av32 base baseline not found')
+          s=s.replace("A.OVERLAY_ID='wfm-auto-overlay-v32';","A.OVERLAY_ID='wfm-auto-overlay-v33';",1)
+
+          anchor="A.txt=e=>String(e?.innerText||e?.textContent||e?.value||'').replace(/\\s+/g,' ').trim();\n"
+          insert="""A.txt=e=>String(e?.innerText||e?.textContent||e?.value||'').replace(/\\s+/g,' ').trim();
+A.preloadVideo=()=>{try{let v=document.getElementById('wfm-auto-preload-video-v33');if(v)return v;v=document.createElement('video');v.id='wfm-auto-preload-video-v33';v.src=A.VIDEO_URL;v.preload='auto';v.playsInline=true;v.muted=true;v.defaultMuted=true;v.volume=0;v.style.cssText='position:fixed;width:1px;height:1px;left:-20px;top:-20px;opacity:.001;pointer-events:none';(document.body||document.documentElement).appendChild(v);try{v.load()}catch(_){}return v}catch(_){return null}};
+"""
+          if anchor not in s:
+              raise SystemExit('A.txt anchor not found')
+          s=s.replace(anchor,insert,1)
+
+          old="A.announce();A.report();A.announceTimer=setInterval(()=>{A.announce();A.report();A.paintOverlay()},500);"
+          new="A.preloadVideo();A.announce();A.report();A.announceTimer=setInterval(()=>{A.announce();A.report();A.paintOverlay()},500);"
+          if old not in s:
+              raise SystemExit('announce anchor not found')
+          s=s.replace(old,new,1)
+
+          # New overlay proof color only; leave sizing/audio/scan logic untouched.
+          s=s.replace('background:#102a1f;pointer-events:auto','background:#1f2937;pointer-events:auto',1)
+          s=s.replace('background:#102a1f;pointer-events:none','background:#1f2937;pointer-events:none',1)
+          s=s.replace("setProperty('background','#102a1f','important')","setProperty('background','#1f2937','important')")
+          s=s.replace('background:#102a1f;pointer-events:none;z-index:2','background:#1f2937;pointer-events:none;z-index:2',1)
+          s=s.replace('0 0 0 9999px #102a1f;pointer-events:none','0 0 0 9999px #1f2937;pointer-events:none',1)
+          s=s.replace('rgba(255,228,230,.62)','rgba(219,234,254,.62)',1)
+          s=s.replace('rgba(253,164,175,.18)','rgba(147,197,253,.18)',1)
+          p.write_text(s,encoding='utf-8')
+          PY
+
+          node --check wfm-auto-base-v30a.js
+          git diff --check
+          grep -q 'TESTVARIANT · Av33' index.html
+          grep -q "data.version==='av33'" index.html
+          grep -q 'WFM Scanner Av33' WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt
+          grep -q 'version:"av33"' WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt
+          grep -q "A.OVERLAY_ID='wfm-auto-overlay-v33'" wfm-auto-base-v30a.js
+          grep -q 'wfm-auto-preload-video-v33' wfm-auto-base-v30a.js
+          grep -q 'A.preloadVideo();A.announce()' wfm-auto-base-v30a.js
+          grep -q 'width:100vw;height:100vh' wfm-auto-base-v30a.js
+          grep -q 'object-fit:cover' wfm-auto-base-v30a.js
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/temp-av33-video-ready.yml
+          git add index.html WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt wfm-auto-base-v30a.js
+          git diff --cached --name-only | sort > /tmp/changed
+          printf '%s\n' '.github/workflows/temp-av33-video-ready.yml' 'WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt' 'index.html' 'wfm-auto-base-v30a.js' | sort > /tmp/expected
+          diff -u /tmp/expected /tmp/changed
+          git commit -m 'Av33: preload processing video before login completes'
+          git push origin main
