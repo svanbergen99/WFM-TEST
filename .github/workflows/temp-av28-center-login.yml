@@ -19,7 +19,6 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          # A-test page only: version bump + a clearly different accent.
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
           if 'TESTVARIANT · Av27' not in s or "data.version==='av27'" not in s:
@@ -40,7 +39,6 @@ jobs:
               s=s.replace(old,new)
           p.write_text(s,encoding='utf-8')
 
-          # Static A favorite: bump to Av28.
           p=Path('WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt')
           s=p.read_text(encoding='utf-8')
           if 'WFM Scanner Av27' not in s or 'version:"av27"' not in s:
@@ -48,8 +46,6 @@ jobs:
           s=s.replace('Av27','Av28').replace('AV27','AV28').replace('av27','av28')
           p.write_text(s,encoding='utf-8')
 
-          # Visual A-base only. Shift the actual WFM login app horizontally,
-          # while keeping the overlay itself outside that shifted app root.
           p=Path('wfm-auto-base-v30a.js')
           s=p.read_text(encoding='utf-8')
           if "A.OVERLAY_ID='wfm-auto-overlay-v27';" not in s:
@@ -60,26 +56,26 @@ jobs:
           if anchor not in s:
               raise SystemExit('loginRect anchor not found')
           helpers=r'''A.restoreLoginShift=()=>{try{
-  const d=A.targetDoc();if(!d)return;
-  const node=d.querySelector('[data-wfm-auto-shift-x]');if(!node)return;
-  const old=node.dataset.wfmAutoOrigTranslate||'';
-  if(old)node.style.setProperty('translate',old,'important');else node.style.removeProperty('translate');
-  delete node.dataset.wfmAutoShiftX;delete node.dataset.wfmAutoOrigTranslate
-}catch(_){} };
-A.centerLoginShift=()=>{try{
-  const w=A.target(),d=A.targetDoc();if(!w||!d)return null;
-  const pwd=d.querySelector('input[type="password"]');if(!pwd||!A.visible(pwd,w))return null;
-  let node=pwd;while(node.parentElement&&node.parentElement!==d.body)node=node.parentElement;
-  if(!node||node===d.body||node.id===A.OVERLAY_ID)return null;
-  if(!node.hasAttribute('data-wfm-auto-shift-x'))node.dataset.wfmAutoOrigTranslate=node.style.translate||'';
-  const pr=pwd.getBoundingClientRect(),current=Number(node.dataset.wfmAutoShiftX||0)||0;
-  const delta=w.innerWidth/2-(pr.left+pr.right)/2;
-  const next=Math.max(-220,Math.min(220,current+delta));
-  node.dataset.wfmAutoShiftX=String(next);
-  node.style.setProperty('translate',`${next}px 0`,'important');
-  return node
-}catch(_){return null}};
-'''
+            const d=A.targetDoc();if(!d)return;
+            const node=d.querySelector('[data-wfm-auto-shift-x]');if(!node)return;
+            const old=node.dataset.wfmAutoOrigTranslate||'';
+            if(old)node.style.setProperty('translate',old,'important');else node.style.removeProperty('translate');
+            delete node.dataset.wfmAutoShiftX;delete node.dataset.wfmAutoOrigTranslate
+          }catch(_){} };
+          A.centerLoginShift=()=>{try{
+            const w=A.target(),d=A.targetDoc();if(!w||!d)return null;
+            const pwd=d.querySelector('input[type="password"]');if(!pwd||!A.visible(pwd,w))return null;
+            let node=pwd;while(node.parentElement&&node.parentElement!==d.body)node=node.parentElement;
+            if(!node||node===d.body||node.id===A.OVERLAY_ID)return null;
+            if(!node.hasAttribute('data-wfm-auto-shift-x'))node.dataset.wfmAutoOrigTranslate=node.style.translate||'';
+            const pr=pwd.getBoundingClientRect(),current=Number(node.dataset.wfmAutoShiftX||0)||0;
+            const delta=w.innerWidth/2-(pr.left+pr.right)/2;
+            const next=Math.max(-220,Math.min(220,current+delta));
+            node.dataset.wfmAutoShiftX=String(next);
+            node.style.setProperty('translate',`${next}px 0`,'important');
+            return node
+          }catch(_){return null}};
+          '''
           s=s.replace(anchor,helpers+anchor,1)
 
           old="const center=(coreLeft+coreRight)/2,coreWidth=coreRight-coreLeft;"
@@ -94,7 +90,6 @@ A.centerLoginShift=()=>{try{
               raise SystemExit('Expected showLoginHole line not found')
           s=s.replace(old,new,1)
 
-          # New overlay background color for visual version confirmation.
           s=s.replace("background:#2a1636;pointer-events:auto","background:#083344;pointer-events:auto",1)
           s=s.replace("background:#2a1636;pointer-events:none","background:#083344;pointer-events:none",1)
           s=s.replace("0 0 0 9999px #2a1636;pointer-events:none","0 0 0 9999px #083344;pointer-events:none",1)
