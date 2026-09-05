@@ -4,7 +4,7 @@ const A=window.WFMAuto=window.WFMAuto||{};
 A.TEST_ORIGIN='https://svanbergen99.github.io';
 A.TEST_URL='https://svanbergen99.github.io/WFM-TEST/';
 A.VIDEO_URL=A.TEST_URL+'ff%20wachte.mp4';
-A.OVERLAY_ID='wfm-auto-overlay-v27';
+A.OVERLAY_ID='wfm-auto-overlay-v28';
 A.P=n=>String(n).padStart(2,'0');
 A.sleep=m=>new Promise(r=>setTimeout(r,m));
 A.MM={jan:1,feb:2,mrt:3,mar:3,apr:4,mei:5,may:5,jun:6,jul:7,aug:8,sep:9,okt:10,oct:10,nov:11,dec:12};
@@ -22,6 +22,26 @@ A.overlayTemplate=d=>{
   return root
 };
 A.ensureOverlay=()=>{const d=A.targetDoc();if(!d)return null;let root=d.getElementById(A.OVERLAY_ID);if(!root)root=A.overlayTemplate(d);return root};
+A.restoreLoginShift=()=>{try{
+  const d=A.targetDoc();if(!d)return;
+  const node=d.querySelector('[data-wfm-auto-shift-x]');if(!node)return;
+  const old=node.dataset.wfmAutoOrigTranslate||'';
+  if(old)node.style.setProperty('translate',old,'important');else node.style.removeProperty('translate');
+  delete node.dataset.wfmAutoShiftX;delete node.dataset.wfmAutoOrigTranslate
+}catch(_){} };
+A.centerLoginShift=()=>{try{
+  const w=A.target(),d=A.targetDoc();if(!w||!d)return null;
+  const pwd=d.querySelector('input[type="password"]');if(!pwd||!A.visible(pwd,w))return null;
+  let node=pwd;while(node.parentElement&&node.parentElement!==d.body)node=node.parentElement;
+  if(!node||node===d.body||node.id===A.OVERLAY_ID)return null;
+  if(!node.hasAttribute('data-wfm-auto-shift-x'))node.dataset.wfmAutoOrigTranslate=node.style.translate||'';
+  const pr=pwd.getBoundingClientRect(),current=Number(node.dataset.wfmAutoShiftX||0)||0;
+  const delta=w.innerWidth/2-(pr.left+pr.right)/2;
+  const next=Math.max(-220,Math.min(220,current+delta));
+  node.dataset.wfmAutoShiftX=String(next);
+  node.style.setProperty('translate',`${next}px 0`,'important');
+  return node
+}catch(_){return null}};
 A.loginRect=()=>{try{
   const w=A.target(),d=A.targetDoc();if(!w||!d)return null;
   const pwd=d.querySelector('input[type="password"]');if(!pwd||!A.visible(pwd,w))return null;
@@ -35,7 +55,7 @@ const submit=(buttonCandidates.find(x=>/log\s*in|login|sign\s*in|aanmeld/i.test(
   const core=[user,pwd,submit].filter(Boolean);if(!core.length)return null;
   const rs=core.map(e=>e.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);if(!rs.length)return null;
   const coreLeft=Math.min(...rs.map(r=>r.left)),coreRight=Math.max(...rs.map(r=>r.right)),coreTop=Math.min(...rs.map(r=>r.top)),coreBottom=Math.max(...rs.map(r=>r.bottom));
-  const center=(coreLeft+coreRight)/2,coreWidth=coreRight-coreLeft;
+  const center=w.innerWidth/2,coreWidth=coreRight-coreLeft;
   let width=Math.max(360,coreWidth+72);width=Math.min(width,420,Math.max(280,w.innerWidth-28));
   let left=center-width/2;left=Math.max(14,Math.min(left,w.innerWidth-14-width));
   let top=coreTop-245,bottom=coreBottom+50;
@@ -50,9 +70,10 @@ A.paintOverlay=()=>{try{
   root.style.cssText='position:fixed;inset:0;z-index:2147483647;pointer-events:none;font-family:Segoe UI,Arial,sans-serif';
   let href='';try{href=w.location.href}catch(_){}
   const loginPage=/\/wfm\/Login\.jsp/i.test(href),processing=A.ui.mode==='processing',showLoginHole=loginPage&&!processing;
+  if(showLoginHole)A.centerLoginShift();else A.restoreLoginShift();
   const topMask=root.querySelector('[data-wfm-mask="top"]'),leftMask=root.querySelector('[data-wfm-mask="left"]'),rightMask=root.querySelector('[data-wfm-mask="right"]'),bottomMask=root.querySelector('[data-wfm-mask="bottom"]'),frame=root.querySelector('[data-wfm-login-frame]'),video=root.querySelector('[data-wfm-video]');
-  const blockingBase='position:fixed;background:#2a1636;pointer-events:auto;margin:0;padding:0;border:0;z-index:1;';
-  const clickThroughBase='position:fixed;background:#2a1636;pointer-events:none;margin:0;padding:0;border:0;z-index:1;';
+  const blockingBase='position:fixed;background:#083344;pointer-events:auto;margin:0;padding:0;border:0;z-index:1;';
+  const clickThroughBase='position:fixed;background:#083344;pointer-events:none;margin:0;padding:0;border:0;z-index:1;';
   if(!showLoginHole){
     topMask.style.cssText=((processing&&A.CLICK_THROUGH_SCAN)?clickThroughBase:blockingBase)+'inset:0;';
     leftMask.style.cssText=rightMask.style.cssText=bottomMask.style.cssText='display:none';
@@ -69,7 +90,7 @@ A.paintOverlay=()=>{try{
   leftMask.style.cssText=guardBase+`left:0;top:${Math.max(0,r.top)}px;width:${Math.max(0,r.left)}px;height:${Math.max(0,r.height)}px;`;
   rightMask.style.cssText=guardBase+`left:${Math.max(0,r.right)}px;right:0;top:${Math.max(0,r.top)}px;height:${Math.max(0,r.height)}px;`;
   const radius=Math.min(64,Math.max(44,r.width*.13));
-  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(220,252,231,.62);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 0 30px rgba(74,222,128,.18),0 18px 52px rgba(0,0,0,.34),0 0 0 9999px #2a1636;pointer-events:none;z-index:2;`;
+  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(255,228,230,.62);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 0 30px rgba(251,113,133,.18),0 18px 52px rgba(0,0,0,.34),0 0 0 9999px #083344;pointer-events:none;z-index:2;`;
 }catch(_){} };
 A.paintController=()=>{try{const s=document.getElementById('state'),d=document.getElementById('detail');if(s)s.textContent=A.ui.text;if(d)d.textContent=A.ui.detail||''}catch(_){} };
 A.report=()=>{try{A.receiver()?.postMessage({type:'wfm-scanner-status',mode:A.ui.mode,text:A.ui.text,detail:A.ui.detail,kind:A.ui.kind,progress:A.ui.progress},A.TEST_ORIGIN)}catch(_){} };
@@ -77,7 +98,7 @@ A.paint=()=>{A.paintController();A.paintOverlay()};
 A.setMode=mode=>{A.ui.mode=mode||'login';A.paint();A.report()};
 A.setState=(text,detail,kind='active')=>{A.ui.text=text||'';A.ui.detail=detail||'';A.ui.kind=kind;A.paint();A.report()};
 A.setProgress=stage=>{A.ui.progress=stage||null;A.paint();A.report()};
-A.removeOverlay=()=>{try{A.targetDoc()?.getElementById(A.OVERLAY_ID)?.remove()}catch(_){} };
+A.removeOverlay=()=>{try{A.restoreLoginShift();A.targetDoc()?.getElementById(A.OVERLAY_ID)?.remove()}catch(_){} };
 A.announce=()=>{try{A.receiver()?.postMessage({type:'wfm-scanner-helper-ready'},A.TEST_ORIGIN)}catch(_){} };
 A.announce();A.report();A.announceTimer=setInterval(()=>{A.announce();A.report();A.paintOverlay()},500);
 A.visible=(e,w)=>{if(!e||!w)return false;const s=w.getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0};
