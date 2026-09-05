@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WFM Scanner</title>
+<style>
+:root{font-family:Segoe UI,Arial,sans-serif;color:#0f172a;background:#f8fafc}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:18px;background:#f8fafc}.card{width:100%;max-width:340px;background:#fff;border:1px solid #dbe2ea;border-radius:18px;box-shadow:0 18px 50px rgba(15,23,42,.16);padding:18px}.head{display:flex;align-items:center;gap:10px}.dot{width:11px;height:11px;border-radius:50%;background:#94a3b8;box-shadow:0 0 0 4px rgba(148,163,184,.14)}.dot.ok{background:#16a34a;box-shadow:0 0 0 4px rgba(22,163,74,.14)}.dot.busy{background:#f59e0b;box-shadow:0 0 0 4px rgba(245,158,11,.14)}.dot.bad{background:#dc2626;box-shadow:0 0 0 4px rgba(220,38,38,.14)}h1{font-size:20px;margin:0}.sub{margin:5px 0 16px;color:#64748b;font-size:12px;line-height:1.35}.team{padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;font-size:13px;font-weight:700;margin-bottom:12px}.btn{width:100%;height:50px;border:0;border-radius:12px;background:#111827;color:#fff;font-size:16px;font-weight:800;cursor:pointer}.btn:disabled{opacity:.5;cursor:not-allowed}.status{margin-top:12px;padding:10px 11px;border-radius:10px;background:#f1f5f9;color:#475569;font-size:12px;line-height:1.35;min-height:48px}.close{width:100%;margin-top:10px;border:0;background:transparent;color:#64748b;font-size:12px;cursor:pointer;padding:8px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="head"><span id="dot" class="dot"></span><h1>WFM Scanner</h1></div>
+  <p class="sub">Dit venster bestuurt alleen het WFM-tabblad waar je de favoriet hebt aangeklikt.</p>
+  <div class="team">Team: KCD Team 3</div>
+  <button id="scan" class="btn" type="button" disabled>Rooster ophalen</button>
+  <div id="status" class="status">Wachten op verbinding met WFM…</div>
+  <button id="close" class="close" type="button">Sluiten</button>
+</div>
+<script>
+(()=>{
+'use strict';
+const WFM_ORIGIN='https://genesyswfm.hosting.corp';
+const dot=document.getElementById('dot'),scan=document.getElementById('scan'),status=document.getElementById('status'),closeBtn=document.getElementById('close');
+let connected=false,running=false;
+function setState(kind,text){dot.className='dot'+(kind?' '+kind:'');status.textContent=text}
+window.addEventListener('message',e=>{
+  if(e.origin!==WFM_ORIGIN)return;
+  if(window.opener&&e.source!==window.opener)return;
+  const d=e.data||{};
+  if(d.type==='wfm-popup-connected'){
+    connected=true;running=false;scan.disabled=false;scan.textContent='Rooster ophalen';setState('ok','Verbonden met WFM. Klaar om te scannen.');
+  }
+  if(d.type==='wfm-popup-status'){
+    if(d.status==='running'){running=true;scan.disabled=true;scan.textContent='Bezig met scannen…';setState('busy',d.text||'Scanner gestart in WFM…')}
+    else if(d.status==='error'){running=false;scan.disabled=false;scan.textContent='Rooster ophalen';setState('bad',d.text||'Scanner kon niet starten.')}
+  }
+});
+async function startScan(){
+  if(!connected||running)return;
+  running=true;scan.disabled=true;scan.textContent='Bezig met scannen…';setState('busy','Scanner-code laden…');
+  try{
+    const r=await fetch('WFM-Planning-Scan-Send-Bookmarklet.txt?v='+Date.now(),{cache:'no-store'});
+    if(!r.ok)throw new Error('Scanner-code kon niet worden geladen.');
+    const code=(await r.text()).trim();
+    if(!code.startsWith('javascript:'))throw new Error('Ongeldige scanner-code ontvangen.');
+    if(!window.opener||window.opener.closed)throw new Error('Het WFM-venster is niet meer open.');
+    window.opener.postMessage({type:'wfm-popup-run-scanner',code},WFM_ORIGIN);
+    setState('busy','Opdracht naar WFM gestuurd. De 6-weken scan wordt nu uitgevoerd.');
+  }catch(err){running=false;scan.disabled=false;scan.textContent='Rooster ophalen';setState('bad',err?.message||String(err))}
+}
+scan.addEventListener('click',startScan);
+closeBtn.addEventListener('click',()=>window.close());
+setInterval(()=>{if(window.opener&&window.opener.closed){connected=false;scan.disabled=true;setState('bad','WFM is gesloten. Open WFM opnieuw en klik daar weer op de favoriet.')}},700);
+})();
+</script>
+</body>
+</html>
