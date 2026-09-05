@@ -4,7 +4,7 @@ const A=window.WFMAuto=window.WFMAuto||{};
 A.TEST_ORIGIN='https://svanbergen99.github.io';
 A.TEST_URL='https://svanbergen99.github.io/WFM-TEST/';
 A.VIDEO_URL=A.TEST_URL+'ff%20wachte.mp4';
-A.OVERLAY_ID='wfm-auto-overlay-v30';
+A.OVERLAY_ID='wfm-auto-overlay-v31';
 A.P=n=>String(n).padStart(2,'0');
 A.sleep=m=>new Promise(r=>setTimeout(r,m));
 A.MM={jan:1,feb:2,mrt:3,mar:3,apr:4,mei:5,may:5,jun:6,jul:7,aug:8,sep:9,okt:10,oct:10,nov:11,dec:12};
@@ -59,9 +59,10 @@ const submit=(buttonCandidates.find(x=>/log\s*in|login|sign\s*in|aanmeld/i.test(
   let left=fieldLeft-sidePad,right=fieldRight+sidePad;
   left=Math.max(14,left);right=Math.min(w.innerWidth-14,right);
   const width=Math.max(1,right-left);
-  let top=coreTop-245,bottom=coreBottom+50;
+  const headerCandidates=[...d.querySelectorAll('img,h1,h2,h3,h4,p,span,div,td,strong,b')].map(e=>({e,r:e.getBoundingClientRect(),t:(A.txt(e)+' '+String(e.getAttribute?.('alt')||'')+' '+String(e.getAttribute?.('title')||'')).toLowerCase()})).filter(x=>A.visible(x.e,w)&&x.r.bottom<=coreTop-8&&x.r.bottom>=coreTop-290&&Math.abs((x.r.left+x.r.right)/2-pc)<=85&&x.r.width<=pr.width+120&&(/genesys|workforce management|version/.test(x.t)||(x.e.tagName==='IMG'&&x.r.width<=260&&x.r.height<=110)));
+  const visualTop=headerCandidates.length?Math.min(...headerCandidates.map(x=>x.r.top)):coreTop-205;
+  let top=visualTop-sidePad,bottom=coreBottom+sidePad;
   top=Math.max(18,top);bottom=Math.min(w.innerHeight-18,bottom);
-  if(bottom-top<430){const need=430-(bottom-top),up=Math.min(need,Math.max(0,top-18));top-=up;bottom=Math.min(w.innerHeight-18,bottom+(need-up))}
   return{left,top,right,bottom,width,height:bottom-top}
 }catch(_){return null}};
 A.paintOverlay=()=>{try{
@@ -73,8 +74,8 @@ A.paintOverlay=()=>{try{
   const loginPage=/\/wfm\/Login\.jsp/i.test(href),processing=A.ui.mode==='processing',showLoginHole=loginPage&&!processing;
   if(showLoginHole)A.centerLoginShift();else A.restoreLoginShift();
   const topMask=root.querySelector('[data-wfm-mask="top"]'),leftMask=root.querySelector('[data-wfm-mask="left"]'),rightMask=root.querySelector('[data-wfm-mask="right"]'),bottomMask=root.querySelector('[data-wfm-mask="bottom"]'),frame=root.querySelector('[data-wfm-login-frame]'),video=root.querySelector('[data-wfm-video]');
-  const blockingBase='position:fixed;background:#0b1f3a;pointer-events:auto;margin:0;padding:0;border:0;z-index:1;';
-  const clickThroughBase='position:fixed;background:#0b1f3a;pointer-events:none;margin:0;padding:0;border:0;z-index:1;';
+  const blockingBase='position:fixed;background:#2a1038;pointer-events:auto;margin:0;padding:0;border:0;z-index:1;';
+  const clickThroughBase='position:fixed;background:#2a1038;pointer-events:none;margin:0;padding:0;border:0;z-index:1;';
   if(!showLoginHole){
     topMask.style.cssText=((processing&&A.CLICK_THROUGH_SCAN)?clickThroughBase:blockingBase)+'inset:0;';
     leftMask.style.cssText=rightMask.style.cssText=bottomMask.style.cssText='display:none';
@@ -91,7 +92,7 @@ A.paintOverlay=()=>{try{
   leftMask.style.cssText=guardBase+`left:0;top:${Math.max(0,r.top)}px;width:${Math.max(0,r.left)}px;height:${Math.max(0,r.height)}px;`;
   rightMask.style.cssText=guardBase+`left:${Math.max(0,r.right)}px;right:0;top:${Math.max(0,r.top)}px;height:${Math.max(0,r.height)}px;`;
   const radius=Math.min(64,Math.max(44,r.width*.13));
-  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(254,243,199,.62);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 0 30px rgba(252,211,77,.18),0 18px 52px rgba(0,0,0,.34),0 0 0 9999px #0b1f3a;pointer-events:none;z-index:2;`;
+  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(204,251,241,.62);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 0 30px rgba(94,234,212,.18),0 18px 52px rgba(0,0,0,.34),0 0 0 9999px #2a1038;pointer-events:none;z-index:2;`;
 }catch(_){} };
 A.paintController=()=>{try{const s=document.getElementById('state'),d=document.getElementById('detail');if(s)s.textContent=A.ui.text;if(d)d.textContent=A.ui.detail||''}catch(_){} };
 A.report=()=>{try{A.receiver()?.postMessage({type:'wfm-scanner-status',mode:A.ui.mode,text:A.ui.text,detail:A.ui.detail,kind:A.ui.kind,progress:A.ui.progress},A.TEST_ORIGIN)}catch(_){} };
