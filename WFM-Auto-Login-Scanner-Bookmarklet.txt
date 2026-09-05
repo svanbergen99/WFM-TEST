@@ -1,27 +1,16 @@
 javascript:(()=>{"use strict";
 const T="https://svanbergen99.github.io",B=T+"/WFM-TEST/",id=Date.now().toString(36)+Math.random().toString(36).slice(2);
-const H=`<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WFM Scanner actief</title><style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;font-family:Segoe UI,Arial,sans-serif;background:#07111f;color:#fff}body{display:grid;place-items:center;padding:18px;overflow:hidden}.box{width:min(920px,100%);border:1px solid #334155;border-radius:20px;background:#111827;padding:22px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.45)}.stars{font-size:30px;margin-bottom:10px}#state{font-size:clamp(20px,3vw,34px);font-weight:900;line-height:1.2;margin-bottom:10px}#detail{font-size:clamp(12px,1.5vw,17px);line-height:1.5;color:#cbd5e1}.progress{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:28px}.prog{padding:16px 10px;border:1px solid #334155;border-radius:14px;background:#0f172a;color:#94a3b8;font-weight:800}.prog .icon{display:grid;place-items:center;width:32px;height:32px;margin:0 auto 8px;border-radius:50%;background:#334155;color:#fff}.prog.current{border-color:#fbbf24;color:#fff}.prog.current .icon{background:#fbbf24;color:#111827}.prog.done{border-color:#22c55e;color:#dcfce7}.prog.done .icon{background:#22c55e;color:#052e16}.prog.done .icon::before{content:"✓";font-size:20px}.prog.done .icon span{display:none}body[data-mode="login"] .progress,body[data-mode="error"] .progress{display:none}body[data-state="error"] #state{color:#fca5a5}body[data-state="success"] #state{color:#86efac}@media(max-width:760px){.progress{grid-template-columns:1fr 1fr}.box{padding:18px}}
-</style></head><body data-mode="login" data-state="active"><div class="box"><div class="stars">⭐WFM Scanner⭐</div><div id="state">🌟 Systeem actief! Vul nu je gegevens in en log in. 🌟</div><div id="detail">De scanner blijft actief. Zodra je inlogt wordt dit venster groter en wordt alles automatisch uitgevoerd.</div><div id="progress" class="progress"><div class="prog" data-progress-step="login"><div class="icon"><span>1</span></div>Inloggen</div><div class="prog" data-progress-step="six"><div class="icon"><span>2</span></div>6 weken laden</div><div class="prog" data-progress-step="scan"><div class="icon"><span>3</span></div>Rooster scannen</div><div class="prog" data-progress-step="import"><div class="icon"><span>4</span></div>Importeren</div></div></div><script src="${B}wfm-auto-base.js?v=23"></script><script src="${B}wfm-auto-scan.js?v=23"></script><script src="${B}wfm-auto-run.js?v=23"></script></body></html>`;
-let helperPromise=null;
-const makeBlank=w=>{try{const d=w.document;d.documentElement.style.background="#07111f";d.body.style.cssText="margin:0;background:#07111f;width:100vw;height:100vh"}catch(_){}return w};
-if("documentPictureInPicture" in window){
-  try{helperPromise=documentPictureInPicture.requestWindow({width:460,height:300}).then(makeBlank).catch(()=>null)}catch(_){helperPromise=Promise.resolve(null)}
-}else{
-  let w=null;try{w=window.open("about:blank","wfmAutoScannerController","popup=yes,width=460,height=300,resizable=yes,scrollbars=no")}catch(_){}
-  helperPromise=Promise.resolve(w?makeBlank(w):null)
-}
+const H=`<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WFM Scanner controller</title><style>*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;font-family:Segoe UI,Arial,sans-serif;background:#07111f;color:#fff}body{display:grid;place-items:center;padding:12px}.box{width:100%;border:1px solid #334155;border-radius:14px;background:#111827;padding:14px;text-align:center}#state{font-size:14px;font-weight:900;line-height:1.25}#detail{font-size:10px;line-height:1.35;color:#cbd5e1;margin-top:6px}</style></head><body><div class="box"><div id="state">⭐ Scannercontroller actief</div><div id="detail">Laat dit kleine venster open. De voortgang staat in PiP 2.</div></div><script src="${B}wfm-auto-base.js?v=24"></script><script src="${B}wfm-auto-scan.js?v=24"></script><script src="${B}wfm-auto-run.js?v=24"></script></body></html>`;
+let p=null;
+try{p=window.open("about:blank","wfmAutoScannerController","popup=yes,width=320,height=170,resizable=yes,scrollbars=no")}catch(_){}
+if(!p){alert("WFM Scanner kon niet worden geactiveerd. Sta popups toe en probeer opnieuw.");return}
+try{const d=p.document;d.open();d.write('<!doctype html><html><head><meta charset="utf-8"><title>WFM Scanner</title><style>html,body{margin:0;width:100%;height:100%;background:#07111f}</style></head><body></body></html>');d.close()}catch(_){}
 let done=false,timer=null,tries=0;
 const cleanup=()=>{window.removeEventListener("message",onMsg);if(timer)clearInterval(timer)};
-const fail=async()=>{if(done)return;cleanup();try{(await helperPromise)?.close()}catch(_){}alert("De klik op ⭐WFM Scanner⭐ kon niet door WFM-TEST worden bevestigd. Open WFM opnieuw via de testpagina en probeer nogmaals.")};
-const startHelper=async()=>{
-  let p=await helperPromise;
-  if(!p){try{p=window.open("about:blank","wfmAutoScannerController","popup=yes,width=460,height=300,resizable=yes,scrollbars=no")}catch(_){}}
-  if(!p){alert("PiP 2 kon niet worden geopend. Controleer of Picture-in-Picture/popups zijn toegestaan.");return}
-  try{const doc=p.document;doc.open();p.WFMAutoTarget=window;doc.write(H);doc.close()}catch(_){try{p.close()}catch(_){}alert("WFM Scanner kon na bevestiging niet worden gestart.")}
-};
+const fail=()=>{if(done)return;cleanup();try{p.close()}catch(_){}alert("De klik op ⭐WFM Scanner⭐ kon niet door WFM-TEST worden bevestigd. Open WFM opnieuw via de testpagina en probeer nogmaals.")};
+const startHelper=()=>{try{const doc=p.document;doc.open();doc.write(H);doc.close();setTimeout(()=>{try{window.focus()}catch(_){}},80)}catch(_){try{p.close()}catch(_){}alert("WFM Scanner controller kon niet worden gestart.")}};
 const onMsg=e=>{if(e.origin!==T)return;const d=e.data||{};if(d.type!=="wfm-scanner-activated-ack"||d.activationId!==id)return;done=true;cleanup();startHelper()};
 window.addEventListener("message",onMsg);
-const announce=()=>{if(done)return;tries++;try{if(window.opener&&!window.opener.closed)window.opener.postMessage({type:"wfm-scanner-activated",activationId:id},T)}catch(_){}if(tries>=20)fail()};
+const announce=()=>{if(done)return;tries++;try{if(window.opener&&!window.opener.closed)window.opener.postMessage({type:"wfm-scanner-activated",activationId:id},T)}catch(_){}if(tries>=30)fail()};
 timer=setInterval(announce,100);announce()
 })()
