@@ -35,9 +35,9 @@ A.loginRect=()=>{try{
   if(!nodes.length)return null;
   const rs=nodes.map(e=>e.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);
   if(!rs.length)return null;
-  let left=Math.min(...rs.map(r=>r.left))-60,right=Math.max(...rs.map(r=>r.right))+60,top=Math.min(...rs.map(r=>r.top))-215,bottom=Math.max(...rs.map(r=>r.bottom))+55;
+  let left=Math.min(...rs.map(r=>r.left))-24,right=Math.max(...rs.map(r=>r.right))+24,top=Math.min(...rs.map(r=>r.top))-215,bottom=Math.max(...rs.map(r=>r.bottom))+55;
   left=Math.max(12,left);top=Math.max(12,top);right=Math.min(w.innerWidth-12,right);bottom=Math.min(w.innerHeight-12,bottom);
-  if(right-left<420){const c=(left+right)/2;left=Math.max(12,c-210);right=Math.min(w.innerWidth-12,c+210)}
+  if(right-left<360){const c=(left+right)/2;left=Math.max(12,c-180);right=Math.min(w.innerWidth-12,c+180)}
   if(bottom-top<440){const c=(top+bottom)/2;top=Math.max(12,c-220);bottom=Math.min(w.innerHeight-12,c+220)}
   return{left,top,right,bottom,width:right-left,height:bottom-top}
 }catch(_){return null}};
@@ -65,7 +65,7 @@ A.paintOverlay=()=>{try{
   bottomMask.style.cssText=blockingBase+`left:0;top:${Math.max(0,r.bottom)}px;width:100%;bottom:0;`;
   leftMask.style.cssText=blockingBase+`left:0;top:${Math.max(0,r.top)}px;width:${Math.max(0,r.left)}px;height:${Math.max(0,r.height)}px;`;
   rightMask.style.cssText=blockingBase+`left:${Math.max(0,r.right)}px;right:0;top:${Math.max(0,r.top)}px;height:${Math.max(0,r.height)}px;`;
-  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border:2px solid rgba(255,255,255,.72);border-radius:18px;box-shadow:0 0 0 1px rgba(0,0,0,.65);pointer-events:none;z-index:2;`;
+  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border:1px solid rgba(255,255,255,.58);border-radius:22px;box-shadow:0 12px 42px rgba(0,0,0,.38);pointer-events:none;z-index:2;`;
 }catch(_){} };
 A.paintController=()=>{try{const s=document.getElementById('state'),d=document.getElementById('detail');if(s)s.textContent=A.ui.text;if(d)d.textContent=A.ui.detail||''}catch(_){} };
 A.report=()=>{try{A.receiver()?.postMessage({type:'wfm-scanner-status',mode:A.ui.mode,text:A.ui.text,detail:A.ui.detail,kind:A.ui.kind,progress:A.ui.progress},A.TEST_ORIGIN)}catch(_){} };
