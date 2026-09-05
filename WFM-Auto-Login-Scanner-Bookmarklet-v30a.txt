@@ -1,18 +1,18 @@
 javascript:(()=>{"use strict";
 const T="https://svanbergen99.github.io",B=T+"/WFM-TEST/",id=Date.now().toString(36)+Math.random().toString(36).slice(2);
-if(!/\/wfm\/Login\.jsp/i.test(location.href)){alert("Open eerst het WFM-inlogscherm via Rooster in Av35 en klik daarna op WFM Scanner Av35.");return}
+if(!/\/wfm\/Login\.jsp/i.test(location.href)){alert("Open eerst het WFM-inlogscherm via Rooster in Av36 en klik daarna op WFM Scanner Av36.");return}
 const showStarting=()=>{};
-const H=`<!doctype html><html lang="nl"><head><meta charset="utf-8"><title>WFM Scanner Av35 helper</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07111f}</style></head><body><script src="${B}wfm-auto-base-v30a.js?v=av35"></script><script src="${B}wfm-auto-scan-v30a.js?v=av35"></script><script src="${B}wfm-auto-run-v30a.js?v=av35"></script></body></html>`;
+const H=`<!doctype html><html lang="nl"><head><meta charset="utf-8"><title>WFM Scanner Av36 helper</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07111f}</style></head><body><script src="${B}wfm-auto-base-v30a.js?v=av36"></script><script src="${B}wfm-auto-scan-v30a.js?v=av36"></script><script src="${B}wfm-auto-run-v30a.js?v=av36"></script></body></html>`;
 const sx=Math.max(0,screen.availWidth-2),sy=Math.max(0,screen.availHeight-2);
 let p=null;try{p=window.open("about:blank","wfmAutoScannerControllerV30A",`popup=yes,width=1,height=1,left=${sx},top=${sy},resizable=no,scrollbars=no`)}catch(_){}
 if(!p){alert("Scanner kon niet starten. Sta popups toe voor WFM en probeer opnieuw.");return}
-try{p.WFMAutoTarget=window;const d=p.document;d.open();d.write('<!doctype html><html><head><meta charset="utf-8"><title>WFM Scanner Av35</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07111f}</style></head><body></body></html>');d.close();try{p.resizeTo(1,1);p.moveTo(sx,sy);p.blur();window.focus()}catch(_){} }catch(_){}
+try{p.WFMAutoTarget=window;const d=p.document;d.open();d.write('<!doctype html><html><head><meta charset="utf-8"><title>WFM Scanner Av36</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07111f}</style></head><body></body></html>');d.close();try{p.resizeTo(1,1);p.moveTo(sx,sy);p.blur();window.focus()}catch(_){} }catch(_){}
 let done=false,timer=null,tries=0;
 const cleanup=()=>{window.removeEventListener("message",onMsg);if(timer)clearInterval(timer)};
 const fail=()=>{if(done)return;cleanup();try{p.close()}catch(_){}alert("Scannerklik niet bevestigd. Sluit WFM en open het opnieuw via WFM-TEST.")};
 const startHelper=()=>{try{p.WFMAutoTarget=window;const doc=p.document;doc.open();doc.write(H);doc.close();setTimeout(()=>{try{p.resizeTo(1,1);p.moveTo(sx,sy);p.blur();window.focus()}catch(_){}},80)}catch(_){try{p.close()}catch(_){}alert("Scannercontroller kon niet starten. Sluit WFM en probeer opnieuw.")}};
 const onMsg=e=>{if(e.origin!==T)return;const d=e.data||{};if(d.type!=="wfm-scanner-activated-ack"||d.activationId!==id)return;done=true;cleanup();startHelper()};
 window.addEventListener("message",onMsg);
-const announce=()=>{if(done)return;tries++;try{if(window.opener&&!window.opener.closed)window.opener.postMessage({type:"wfm-scanner-activated",activationId:id,variant:"v30a",version:"av35"},T)}catch(_){}if(tries>=30)fail()};
+const announce=()=>{if(done)return;tries++;try{if(window.opener&&!window.opener.closed)window.opener.postMessage({type:"wfm-scanner-activated",activationId:id,variant:"v30a",version:"av36"},T)}catch(_){}if(tries>=30)fail()};
 timer=setInterval(announce,100);announce()
 })()
