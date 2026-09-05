@@ -30,16 +30,31 @@ A.loginRect=()=>{try{
   const user=inputs[0]||null;
   const buttons=[...form.querySelectorAll('button,input[type="submit"],input[type="button"]')].filter(e=>A.visible(e,w));
   const submit=buttons.find(e=>/log\s*in|login|sign\s*in|aanmeld/i.test(A.txt(e)))||buttons.find(e=>String(e.type||'').toLowerCase()==='submit')||buttons[0]||null;
-  const nodes=[user,pwd,submit].filter(Boolean);
+  const core=[user,pwd,submit].filter(Boolean);if(!core.length)return null;
+  const nodes=[...core];
   for(const e of [user,pwd]){if(!e?.id)continue;const label=[...d.querySelectorAll('label')].find(l=>l.htmlFor===e.id);if(label&&A.visible(label,w))nodes.push(label)}
-  if(!nodes.length)return null;
-  const rs=nodes.map(e=>e.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);
-  if(!rs.length)return null;
-  let left=Math.min(...rs.map(r=>r.left))-24,right=Math.max(...rs.map(r=>r.right))+24,top=Math.min(...rs.map(r=>r.top))-215,bottom=Math.max(...rs.map(r=>r.bottom))+55;
-  left=Math.max(12,left);top=Math.max(12,top);right=Math.min(w.innerWidth-12,right);bottom=Math.min(w.innerHeight-12,bottom);
-  if(right-left<360){const c=(left+right)/2;left=Math.max(12,c-180);right=Math.min(w.innerWidth-12,c+180)}
-  if(bottom-top<440){const c=(top+bottom)/2;top=Math.max(12,c-220);bottom=Math.min(w.innerHeight-12,c+220)}
-  return{left,top,right,bottom,width:right-left,height:bottom-top}
+  const coreRs=core.map(e=>e.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);if(!coreRs.length)return null;
+  const coreLeft=Math.min(...coreRs.map(r=>r.left)),coreRight=Math.max(...coreRs.map(r=>r.right)),coreTop=Math.min(...coreRs.map(r=>r.top)),coreBottom=Math.max(...coreRs.map(r=>r.bottom)),coreCenter=(coreLeft+coreRight)/2;
+  const headerNodes=[];
+  for(const e of d.querySelectorAll('img,[alt],[title],h1,h2,h3,h4,p,span,div,td,strong,b')){
+    if(nodes.includes(e)||!A.visible(e,w))continue;
+    const r=e.getBoundingClientRect();if(r.width<=0||r.height<=0||r.width>560||r.height>170)continue;
+    const cx=(r.left+r.right)/2,meta=(A.txt(e)+' '+String(e.getAttribute?.('alt')||'')+' '+String(e.getAttribute?.('title')||'')).replace(/\s+/g,' ').trim();
+    const branded=/genesys|workforce\s*management|version\b/i.test(meta);
+    const centeredImage=e.tagName==='IMG'&&r.width>=70&&r.height>=20&&r.left>=coreLeft-60&&r.right<=coreRight+60;
+    const nearVertical=r.bottom>=coreTop-300&&r.top<=coreBottom+20;
+    const nearHorizontal=Math.abs(cx-coreCenter)<=Math.max(120,(coreRight-coreLeft)*.55);
+    if(nearVertical&&nearHorizontal&&(branded||centeredImage))headerNodes.push(e)
+  }
+  nodes.push(...headerNodes);
+  const rs=nodes.map(e=>e.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);if(!rs.length)return null;
+  const contentLeft=Math.min(...rs.map(r=>r.left)),contentRight=Math.max(...rs.map(r=>r.right));
+  const maxHalf=Math.max(140,(w.innerWidth-28)/2);let half=Math.max(190,coreCenter-contentLeft,contentRight-coreCenter)+34;half=Math.min(maxHalf,half);
+  const width=Math.min(w.innerWidth-24,half*2);let left=coreCenter-width/2;if(left<12)left=12;if(left+width>w.innerWidth-12)left=w.innerWidth-12-width;
+  let top=headerNodes.length?Math.min(...rs.map(r=>r.top))-42:coreTop-215,bottom=Math.max(coreBottom,...rs.map(r=>r.bottom))+64;
+  const targetH=Math.min(460,Math.max(320,w.innerHeight-28));if(bottom-top<targetH){const extra=(targetH-(bottom-top))/2;top-=extra;bottom+=extra}
+  if(top<14){bottom+=14-top;top=14}if(bottom>w.innerHeight-14){const shift=bottom-(w.innerHeight-14);top=Math.max(14,top-shift);bottom=w.innerHeight-14}
+  return{left,top,right:left+width,bottom,width,height:bottom-top}
 }catch(_){return null}};
 A.paintOverlay=()=>{try{
   const w=A.target(),d=A.targetDoc();if(!w||!d)return;
@@ -61,11 +76,13 @@ A.paintOverlay=()=>{try{
   if(video){video.style.cssText='display:none';try{video.pause();if(video.currentTime)video.currentTime=0}catch(_){}}
   let r=A.loginRect();
   if(!r){const ww=Math.min(620,Math.max(420,w.innerWidth*.48)),hh=Math.min(500,Math.max(440,w.innerHeight*.58)),left=(w.innerWidth-ww)/2,top=(w.innerHeight-hh)/2;r={left,top,right:left+ww,bottom:top+hh,width:ww,height:hh}}
-  topMask.style.cssText=blockingBase+`left:0;top:0;width:100%;height:${Math.max(0,r.top)}px;`;
-  bottomMask.style.cssText=blockingBase+`left:0;top:${Math.max(0,r.bottom)}px;width:100%;bottom:0;`;
-  leftMask.style.cssText=blockingBase+`left:0;top:${Math.max(0,r.top)}px;width:${Math.max(0,r.left)}px;height:${Math.max(0,r.height)}px;`;
-  rightMask.style.cssText=blockingBase+`left:${Math.max(0,r.right)}px;right:0;top:${Math.max(0,r.top)}px;height:${Math.max(0,r.height)}px;`;
-  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border:1px solid rgba(255,255,255,.58);border-radius:22px;box-shadow:0 12px 42px rgba(0,0,0,.38);pointer-events:none;z-index:2;`;
+  const guardBase='position:fixed;background:transparent;pointer-events:auto;margin:0;padding:0;border:0;z-index:1;';
+  topMask.style.cssText=guardBase+`left:0;top:0;width:100%;height:${Math.max(0,r.top)}px;`;
+  bottomMask.style.cssText=guardBase+`left:0;top:${Math.max(0,r.bottom)}px;width:100%;bottom:0;`;
+  leftMask.style.cssText=guardBase+`left:0;top:${Math.max(0,r.top)}px;width:${Math.max(0,r.left)}px;height:${Math.max(0,r.height)}px;`;
+  rightMask.style.cssText=guardBase+`left:${Math.max(0,r.right)}px;right:0;top:${Math.max(0,r.top)}px;height:${Math.max(0,r.height)}px;`;
+  const radius=Math.min(76,Math.max(48,r.width*.14));
+  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(207,250,254,.52);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 0 34px rgba(103,232,249,.17),0 20px 56px rgba(0,0,0,.34),0 0 0 9999px #000;pointer-events:none;z-index:2;`;
 }catch(_){} };
 A.paintController=()=>{try{const s=document.getElementById('state'),d=document.getElementById('detail');if(s)s.textContent=A.ui.text;if(d)d.textContent=A.ui.detail||''}catch(_){} };
 A.report=()=>{try{A.receiver()?.postMessage({type:'wfm-scanner-status',mode:A.ui.mode,text:A.ui.text,detail:A.ui.detail,kind:A.ui.kind,progress:A.ui.progress},A.TEST_ORIGIN)}catch(_){} };

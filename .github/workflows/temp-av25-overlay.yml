@@ -1,144 +1,50 @@
-name: Temporary Av25 overlay polish
-
+name: Temporary Av25 index update
 on:
   push:
     branches: [main]
-
+    paths:
+      - '.github/workflows/temp-av25-overlay.yml'
 permissions:
   contents: write
-
 jobs:
-  patch-av25:
-    if: github.actor != 'github-actions[bot]'
+  apply:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Apply Av25 visual polish
+      - name: Apply Av25 page labels and accent
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
-
-          def replace_once(text, old, new, label):
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'{label}: expected exactly 1 match, found {count}')
-              return text.replace(old, new, 1)
-
-          # index.html — A-test labels/version + clearly new cyan accent.
-          p = Path('index.html')
-          s = p.read_text(encoding='utf-8')
-          if 'Av24' not in s or 'av24' not in s:
-              raise SystemExit('index.html is not at expected Av24 state')
-          s = s.replace('Av24', 'Av25').replace('AV24', 'AV25').replace('av24', 'av25')
-          color_map = {
-              '#6d28d9': '#0891b2',
-              'rgba(109,40,217,.25)': 'rgba(8,145,178,.25)',
-              '#8b5cf6': '#06b6d4',
-              'rgba(139,92,246,.26)': 'rgba(6,182,212,.26)',
-              'rgba(139,92,246,.32)': 'rgba(6,182,212,.32)',
-              '#5b21b6': '#0e7490',
-              'rgba(91,33,182,.12)': 'rgba(14,116,144,.14)',
-              '#ddd6fe': '#cffafe',
-              '#a78bfa': '#67e8f9',
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          if 'TESTVARIANT · Av24' not in s or 'version==="av24"' not in s:
+              raise SystemExit('Av24 baseline not found in index')
+          s=s.replace('Av24','Av25').replace('av24','av25').replace('AV24','AV25')
+          colors={
+              '#6d28d9':'#0891b2',
+              '#8b5cf6':'#06b6d4',
+              '#5b21b6':'#0e7490',
+              '#ddd6fe':'#cffafe',
+              '#a78bfa':'#67e8f9',
+              'rgba(109,40,217,.25)':'rgba(8,145,178,.25)',
+              'rgba(91,33,182,.12)':'rgba(14,116,144,.14)',
+              'rgba(139,92,246,.26)':'rgba(6,182,212,.26)',
+              'rgba(139,92,246,.32)':'rgba(6,182,212,.32)'
           }
-          for old, new in color_map.items():
-              s = s.replace(old, new)
-          p.write_text(s, encoding='utf-8')
-
-          # A bookmarklet — static Edge favorite must explicitly become Av25.
-          p = Path('WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt')
-          s = p.read_text(encoding='utf-8')
-          if 'Av24' not in s or 'av24' not in s:
-              raise SystemExit('A bookmarklet is not at expected Av24 state')
-          s = s.replace('Av24', 'Av25').replace('AV24', 'AV25').replace('av24', 'av25')
-          p.write_text(s, encoding='utf-8')
-
-          # A base — only improve full-login-block measurement and visual spotlight.
-          p = Path('wfm-auto-base-v30a.js')
-          s = p.read_text(encoding='utf-8')
-
-          start = s.index('A.loginRect=()=>{try{')
-          end = s.index('A.paintOverlay=()=>{try{', start)
-          new_login_rect = r'''A.loginRect=()=>{try{
-  const w=A.target(),d=A.targetDoc();if(!w||!d)return null;
-  const pwd=d.querySelector('input[type="password"]');if(!pwd||!A.visible(pwd,w))return null;
-  const form=pwd.closest('form')||d;
-  const inputs=[...form.querySelectorAll('input')].filter(e=>e!==pwd&&!['hidden','password','submit','button','checkbox','radio'].includes(String(e.type||'text').toLowerCase())&&A.visible(e,w));
-  const user=inputs[0]||null;
-  const buttons=[...form.querySelectorAll('button,input[type="submit"],input[type="button"]')].filter(e=>A.visible(e,w));
-  const submit=buttons.find(e=>/log\s*in|login|sign\s*in|aanmeld/i.test(A.txt(e)))||buttons.find(e=>String(e.type||'').toLowerCase()==='submit')||buttons[0]||null;
-  const core=[user,pwd,submit].filter(Boolean);if(!core.length)return null;
-  const nodes=[...core];
-  for(const e of [user,pwd]){if(!e?.id)continue;const label=[...d.querySelectorAll('label')].find(l=>l.htmlFor===e.id);if(label&&A.visible(label,w))nodes.push(label)}
-  const coreRs=core.map(e=>e.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);if(!coreRs.length)return null;
-  const coreLeft=Math.min(...coreRs.map(r=>r.left)),coreRight=Math.max(...coreRs.map(r=>r.right)),coreTop=Math.min(...coreRs.map(r=>r.top)),coreBottom=Math.max(...coreRs.map(r=>r.bottom)),coreCenter=(coreLeft+coreRight)/2;
-  const headerNodes=[];
-  for(const e of d.querySelectorAll('img,[alt],[title],h1,h2,h3,h4,p,span,div,td,strong,b')){
-    if(nodes.includes(e)||!A.visible(e,w))continue;
-    const r=e.getBoundingClientRect();if(r.width<=0||r.height<=0||r.width>560||r.height>170)continue;
-    const cx=(r.left+r.right)/2,meta=(A.txt(e)+' '+String(e.getAttribute?.('alt')||'')+' '+String(e.getAttribute?.('title')||'')).replace(/\s+/g,' ').trim();
-    const branded=/genesys|workforce\s*management|version\b/i.test(meta);
-    const centeredImage=e.tagName==='IMG'&&r.width>=70&&r.height>=20&&r.left>=coreLeft-60&&r.right<=coreRight+60;
-    const nearVertical=r.bottom>=coreTop-300&&r.top<=coreBottom+20;
-    const nearHorizontal=Math.abs(cx-coreCenter)<=Math.max(120,(coreRight-coreLeft)*.55);
-    if(nearVertical&&nearHorizontal&&(branded||centeredImage))headerNodes.push(e)
-  }
-  nodes.push(...headerNodes);
-  const rs=nodes.map(e=>e.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);if(!rs.length)return null;
-  const contentLeft=Math.min(...rs.map(r=>r.left)),contentRight=Math.max(...rs.map(r=>r.right));
-  const maxHalf=Math.max(140,(w.innerWidth-28)/2);let half=Math.max(190,coreCenter-contentLeft,contentRight-coreCenter)+34;half=Math.min(maxHalf,half);
-  const width=Math.min(w.innerWidth-24,half*2);let left=coreCenter-width/2;if(left<12)left=12;if(left+width>w.innerWidth-12)left=w.innerWidth-12-width;
-  let top=headerNodes.length?Math.min(...rs.map(r=>r.top))-42:coreTop-215,bottom=Math.max(coreBottom,...rs.map(r=>r.bottom))+64;
-  const targetH=Math.min(460,Math.max(320,w.innerHeight-28));if(bottom-top<targetH){const extra=(targetH-(bottom-top))/2;top-=extra;bottom+=extra}
-  if(top<14){bottom+=14-top;top=14}if(bottom>w.innerHeight-14){const shift=bottom-(w.innerHeight-14);top=Math.max(14,top-shift);bottom=w.innerHeight-14}
-  return{left,top,right:left+width,bottom,width,height:bottom-top}
-}catch(_){return null}};
-'''
-          s = s[:start] + new_login_rect + s[end:]
-
-          old_block = r'''  topMask.style.cssText=blockingBase+`left:0;top:0;width:100%;height:${Math.max(0,r.top)}px;`;
-  bottomMask.style.cssText=blockingBase+`left:0;top:${Math.max(0,r.bottom)}px;width:100%;bottom:0;`;
-  leftMask.style.cssText=blockingBase+`left:0;top:${Math.max(0,r.top)}px;width:${Math.max(0,r.left)}px;height:${Math.max(0,r.height)}px;`;
-  rightMask.style.cssText=blockingBase+`left:${Math.max(0,r.right)}px;right:0;top:${Math.max(0,r.top)}px;height:${Math.max(0,r.height)}px;`;
-  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border:1px solid rgba(255,255,255,.58);border-radius:22px;box-shadow:0 12px 42px rgba(0,0,0,.38);pointer-events:none;z-index:2;`;
-'''
-          new_block = r'''  const guardBase='position:fixed;background:transparent;pointer-events:auto;margin:0;padding:0;border:0;z-index:1;';
-  topMask.style.cssText=guardBase+`left:0;top:0;width:100%;height:${Math.max(0,r.top)}px;`;
-  bottomMask.style.cssText=guardBase+`left:0;top:${Math.max(0,r.bottom)}px;width:100%;bottom:0;`;
-  leftMask.style.cssText=guardBase+`left:0;top:${Math.max(0,r.top)}px;width:${Math.max(0,r.left)}px;height:${Math.max(0,r.height)}px;`;
-  rightMask.style.cssText=guardBase+`left:${Math.max(0,r.right)}px;right:0;top:${Math.max(0,r.top)}px;height:${Math.max(0,r.height)}px;`;
-  const radius=Math.min(76,Math.max(48,r.width*.14));
-  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(207,250,254,.52);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 0 34px rgba(103,232,249,.17),0 20px 56px rgba(0,0,0,.34),0 0 0 9999px #000;pointer-events:none;z-index:2;`;
-'''
-          s = replace_once(s, old_block, new_block, 'login spotlight block')
-          p.write_text(s, encoding='utf-8')
+          for old,new in colors.items():
+              s=s.replace(old,new)
+          if 'TESTVARIANT · Av24' in s or 'version==="av24"' in s:
+              raise SystemExit('Old Av24 A-version remains')
+          p.write_text(s,encoding='utf-8')
           PY
-
-      - name: Verify scope and syntax markers
-        shell: bash
-        run: |
-          set -e
-          grep -q 'TESTVARIANT · Av25' index.html
-          grep -q 'version==="av25"' index.html
-          grep -q 'WFM Scanner Av25' WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt
-          grep -q 'wfm-auto-base-v30a.js?v=av25' WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt
-          grep -q 'box-shadow:0 0 0 1px' wfm-auto-base-v30a.js
-          grep -q 'const headerNodes=\[\]' wfm-auto-base-v30a.js
           git diff --check
-          changed="$(git diff --name-only | sort)"
-          expected="$(printf '%s\n' 'WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt' 'index.html' 'wfm-auto-base-v30a.js' | sort)"
-          test "$changed" = "$expected"
-
-      - name: Commit Av25
-        shell: bash
-        run: |
+          test "$(git diff --name-only)" = "index.html"
+          grep -q 'TESTVARIANT · Av25' index.html
+          grep -q 'Rooster · Av25' index.html
+          grep -q 'version==="av25"' index.html
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add index.html WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt wfm-auto-base-v30a.js
-          git commit -m 'Av25: centered soft-squircle login spotlight'
-          git push origin main
+          git add index.html
+          git diff --cached --quiet || git commit -m 'Av25: update A page labels and accent'
+          git push
