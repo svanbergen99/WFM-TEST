@@ -25,20 +25,22 @@ A.ensureOverlay=()=>{const d=A.targetDoc();if(!d)return null;let root=d.getEleme
 A.loginRect=()=>{try{
   const w=A.target(),d=A.targetDoc();if(!w||!d)return null;
   const pwd=d.querySelector('input[type="password"]');if(!pwd||!A.visible(pwd,w))return null;
-  const form=pwd.closest('form')||d;
-  const inputs=[...form.querySelectorAll('input')].filter(e=>e!==pwd&&!['hidden','password','submit','button','checkbox','radio'].includes(String(e.type||'text').toLowerCase())&&A.visible(e,w));
-  const user=inputs[0]||null;
-  const buttons=[...form.querySelectorAll('button,input[type="submit"],input[type="button"]')].filter(e=>A.visible(e,w));
-  const submit=buttons.find(e=>/log\s*in|login|sign\s*in|aanmeld/i.test(A.txt(e)))||buttons.find(e=>String(e.type||'').toLowerCase()==='submit')||buttons[0]||null;
+  const form=pwd.closest('form')||d,pr=pwd.getBoundingClientRect(),pc=(pr.left+pr.right)/2;
+const inputs=[...d.querySelectorAll('input')].filter(e=>e!==pwd&&!['hidden','password','submit','button','checkbox','radio'].includes(String(e.type||'text').toLowerCase())&&A.visible(e,w));
+const userCandidates=inputs.map(e=>({e,r:e.getBoundingClientRect()})).filter(x=>x.r.bottom<=pr.top+28&&pr.top-x.r.top<190&&x.r.right>=pr.left-70&&x.r.left<=pr.right+70&&Math.abs((x.r.left+x.r.right)/2-pc)<=Math.max(130,pr.width*.8)).sort((a,b)=>(pr.top-b.r.bottom)-(pr.top-a.r.bottom));
+const user=userCandidates[0]?.e||inputs.find(e=>{const r=e.getBoundingClientRect();return r.bottom<=pr.top+28&&r.right>=pr.left&&r.left<=pr.right})||null;
+const buttons=[...d.querySelectorAll('button,input[type="submit"],input[type="button"],[role="button"]')].filter(e=>A.visible(e,w));
+const buttonCandidates=buttons.map(e=>({e,r:e.getBoundingClientRect()})).filter(x=>x.r.top>=pr.bottom-12&&x.r.top<=pr.bottom+220&&x.r.right>=pr.left-55&&x.r.left<=pr.right+55&&Math.abs((x.r.left+x.r.right)/2-pc)<=Math.max(135,pr.width*.85)).sort((a,b)=>(a.r.top-pr.bottom)-(b.r.top-pr.bottom)||Math.abs((a.r.left+a.r.right)/2-pc)-Math.abs((b.r.left+b.r.right)/2-pc));
+const submit=(buttonCandidates.find(x=>/log\s*in|login|sign\s*in|aanmeld/i.test(A.txt(x.e)))||buttonCandidates.find(x=>String(x.e.type||'').toLowerCase()==='submit')||buttonCandidates[0])?.e||null;
   const core=[user,pwd,submit].filter(Boolean);if(!core.length)return null;
   const rs=core.map(e=>e.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);if(!rs.length)return null;
   const coreLeft=Math.min(...rs.map(r=>r.left)),coreRight=Math.max(...rs.map(r=>r.right)),coreTop=Math.min(...rs.map(r=>r.top)),coreBottom=Math.max(...rs.map(r=>r.bottom));
   const center=(coreLeft+coreRight)/2,coreWidth=coreRight-coreLeft;
-  let width=Math.max(390,coreWidth+76);width=Math.min(width,460,Math.max(280,w.innerWidth-28));
+  let width=Math.max(360,coreWidth+72);width=Math.min(width,420,Math.max(280,w.innerWidth-28));
   let left=center-width/2;left=Math.max(14,Math.min(left,w.innerWidth-14-width));
-  let top=coreTop-225,bottom=coreBottom+52;
+  let top=coreTop-245,bottom=coreBottom+50;
   top=Math.max(18,top);bottom=Math.min(w.innerHeight-18,bottom);
-  if(bottom-top<400){const need=400-(bottom-top),up=Math.min(need,Math.max(0,top-18));top-=up;bottom=Math.min(w.innerHeight-18,bottom+(need-up))}
+  if(bottom-top<430){const need=430-(bottom-top),up=Math.min(need,Math.max(0,top-18));top-=up;bottom=Math.min(w.innerHeight-18,bottom+(need-up))}
   return{left,top,right:left+width,bottom,width,height:bottom-top}
 }catch(_){return null}};
 A.paintOverlay=()=>{try{
@@ -49,8 +51,8 @@ A.paintOverlay=()=>{try{
   let href='';try{href=w.location.href}catch(_){}
   const loginPage=/\/wfm\/Login\.jsp/i.test(href),processing=A.ui.mode==='processing',showLoginHole=loginPage&&!processing;
   const topMask=root.querySelector('[data-wfm-mask="top"]'),leftMask=root.querySelector('[data-wfm-mask="left"]'),rightMask=root.querySelector('[data-wfm-mask="right"]'),bottomMask=root.querySelector('[data-wfm-mask="bottom"]'),frame=root.querySelector('[data-wfm-login-frame]'),video=root.querySelector('[data-wfm-video]');
-  const blockingBase='position:fixed;background:#000;pointer-events:auto;margin:0;padding:0;border:0;z-index:1;';
-  const clickThroughBase='position:fixed;background:#000;pointer-events:none;margin:0;padding:0;border:0;z-index:1;';
+  const blockingBase='position:fixed;background:#2a1636;pointer-events:auto;margin:0;padding:0;border:0;z-index:1;';
+  const clickThroughBase='position:fixed;background:#2a1636;pointer-events:none;margin:0;padding:0;border:0;z-index:1;';
   if(!showLoginHole){
     topMask.style.cssText=((processing&&A.CLICK_THROUGH_SCAN)?clickThroughBase:blockingBase)+'inset:0;';
     leftMask.style.cssText=rightMask.style.cssText=bottomMask.style.cssText='display:none';
@@ -67,7 +69,7 @@ A.paintOverlay=()=>{try{
   leftMask.style.cssText=guardBase+`left:0;top:${Math.max(0,r.top)}px;width:${Math.max(0,r.left)}px;height:${Math.max(0,r.height)}px;`;
   rightMask.style.cssText=guardBase+`left:${Math.max(0,r.right)}px;right:0;top:${Math.max(0,r.top)}px;height:${Math.max(0,r.height)}px;`;
   const radius=Math.min(64,Math.max(44,r.width*.13));
-  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(255,237,213,.58);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 0 30px rgba(251,146,60,.18),0 18px 52px rgba(0,0,0,.34),0 0 0 9999px #000;pointer-events:none;z-index:2;`;
+  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(220,252,231,.62);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 0 30px rgba(74,222,128,.18),0 18px 52px rgba(0,0,0,.34),0 0 0 9999px #2a1636;pointer-events:none;z-index:2;`;
 }catch(_){} };
 A.paintController=()=>{try{const s=document.getElementById('state'),d=document.getElementById('detail');if(s)s.textContent=A.ui.text;if(d)d.textContent=A.ui.detail||''}catch(_){} };
 A.report=()=>{try{A.receiver()?.postMessage({type:'wfm-scanner-status',mode:A.ui.mode,text:A.ui.text,detail:A.ui.detail,kind:A.ui.kind,progress:A.ui.progress},A.TEST_ORIGIN)}catch(_){} };
