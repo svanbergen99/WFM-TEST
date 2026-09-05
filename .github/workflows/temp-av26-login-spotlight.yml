@@ -19,7 +19,6 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          # index.html: A-test only — version bump + clearly new orange/coral accent.
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
           if 'TESTVARIANT · Av25' not in s or "data.version==='av25'" not in s:
@@ -40,7 +39,6 @@ jobs:
               s=s.replace(old,new)
           p.write_text(s,encoding='utf-8')
 
-          # Static Edge favorite: Av26 must be reinstalled and announce av26.
           p=Path('WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt')
           s=p.read_text(encoding='utf-8')
           if 'WFM Scanner Av25' not in s or 'version:"av25"' not in s:
@@ -48,31 +46,31 @@ jobs:
           s=s.replace('Av25','Av26').replace('AV25','AV26').replace('av25','av26')
           p.write_text(s,encoding='utf-8')
 
-          # Visual A-base only. Horizontal bounds come strictly from login controls.
           p=Path('wfm-auto-base-v30a.js')
           s=p.read_text(encoding='utf-8')
           start=s.index('A.loginRect=()=>{try{')
           end=s.index('A.paintOverlay=()=>{try{',start)
           new_rect=r'''A.loginRect=()=>{try{
-  const w=A.target(),d=A.targetDoc();if(!w||!d)return null;
-  const pwd=d.querySelector('input[type="password"]');if(!pwd||!A.visible(pwd,w))return null;
-  const form=pwd.closest('form')||d;
-  const inputs=[...form.querySelectorAll('input')].filter(e=>e!==pwd&&!['hidden','password','submit','button','checkbox','radio'].includes(String(e.type||'text').toLowerCase())&&A.visible(e,w));
-  const user=inputs[0]||null;
-  const buttons=[...form.querySelectorAll('button,input[type="submit"],input[type="button"]')].filter(e=>A.visible(e,w));
-  const submit=buttons.find(e=>/log\s*in|login|sign\s*in|aanmeld/i.test(A.txt(e)))||buttons.find(e=>String(e.type||'').toLowerCase()==='submit')||buttons[0]||null;
-  const core=[user,pwd,submit].filter(Boolean);if(!core.length)return null;
-  const rs=core.map(e=>e.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);if(!rs.length)return null;
-  const coreLeft=Math.min(...rs.map(r=>r.left)),coreRight=Math.max(...rs.map(r=>r.right)),coreTop=Math.min(...rs.map(r=>r.top)),coreBottom=Math.max(...rs.map(r=>r.bottom));
-  const center=(coreLeft+coreRight)/2,coreWidth=coreRight-coreLeft;
-  let width=Math.max(390,coreWidth+76);width=Math.min(width,460,Math.max(280,w.innerWidth-28));
-  let left=center-width/2;left=Math.max(14,Math.min(left,w.innerWidth-14-width));
-  let top=coreTop-225,bottom=coreBottom+52;
-  top=Math.max(18,top);bottom=Math.min(w.innerHeight-18,bottom);
-  if(bottom-top<400){const need=400-(bottom-top),up=Math.min(need,Math.max(0,top-18));top-=up;bottom=Math.min(w.innerHeight-18,bottom+(need-up))}
-  return{left,top,right:left+width,bottom,width,height:bottom-top}
-}catch(_){return null}};
-'''
+            const w=A.target(),d=A.targetDoc();if(!w||!d)return null;
+            const pwd=d.querySelector('input[type="password"]');if(!pwd||!A.visible(pwd,w))return null;
+            const form=pwd.closest('form')||d;
+            const inputs=[...form.querySelectorAll('input')].filter(e=>e!==pwd&&!['hidden','password','submit','button','checkbox','radio'].includes(String(e.type||'text').toLowerCase())&&A.visible(e,w));
+            const user=inputs[0]||null;
+            const buttons=[...form.querySelectorAll('button,input[type="submit"],input[type="button"]')].filter(e=>A.visible(e,w));
+            const submit=buttons.find(e=>/log\s*in|login|sign\s*in|aanmeld/i.test(A.txt(e)))||buttons.find(e=>String(e.type||'').toLowerCase()==='submit')||buttons[0]||null;
+            const core=[user,pwd,submit].filter(Boolean);if(!core.length)return null;
+            const rs=core.map(e=>e.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);if(!rs.length)return null;
+            const coreLeft=Math.min(...rs.map(r=>r.left)),coreRight=Math.max(...rs.map(r=>r.right)),coreTop=Math.min(...rs.map(r=>r.top)),coreBottom=Math.max(...rs.map(r=>r.bottom));
+            const center=(coreLeft+coreRight)/2,coreWidth=coreRight-coreLeft;
+            let width=Math.max(390,coreWidth+76);width=Math.min(width,460,Math.max(280,w.innerWidth-28));
+            let left=center-width/2;left=Math.max(14,Math.min(left,w.innerWidth-14-width));
+            let top=coreTop-225,bottom=coreBottom+52;
+            top=Math.max(18,top);bottom=Math.min(w.innerHeight-18,bottom);
+            if(bottom-top<400){const need=400-(bottom-top),up=Math.min(need,Math.max(0,top-18));top-=up;bottom=Math.min(w.innerHeight-18,bottom+(need-up))}
+            return{left,top,right:left+width,bottom,width,height:bottom-top}
+          }catch(_){return null}};
+          '''
+          new_rect='\n'.join(line[10:] if line.startswith('          ') else line for line in new_rect.splitlines())+'\n'
           s=s[:start]+new_rect+s[end:]
           old="const radius=Math.min(76,Math.max(48,r.width*.14));\n  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(207,250,254,.52);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 0 34px rgba(103,232,249,.17),0 20px 56px rgba(0,0,0,.34),0 0 0 9999px #000;pointer-events:none;z-index:2;`;"
           new="const radius=Math.min(64,Math.max(44,r.width*.13));\n  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(255,237,213,.58);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 0 30px rgba(251,146,60,.18),0 18px 52px rgba(0,0,0,.34),0 0 0 9999px #000;pointer-events:none;z-index:2;`;"
