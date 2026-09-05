@@ -6,28 +6,28 @@
 <title>Rooster WFM Test</title>
 <style>
 :root{font-family:Segoe UI,Arial,sans-serif;color:#172033;background:#eef1f5;--line:#dbe2ea;--muted:#64748b}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#eef1f5}.start{min-height:100vh;display:grid;place-items:center;padding:24px}.stack{width:min(470px,calc(100vw - 32px));display:grid;gap:14px}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 12px 35px rgba(15,23,42,.09)}h1,h2,p{margin-top:0}.setup h2{margin-bottom:8px}.setup p{color:var(--muted);font-size:13px;line-height:1.45}.steps{display:grid;gap:8px;margin:14px 0}.step{display:flex;gap:9px;align-items:flex-start;padding:10px;border-radius:10px;background:#f8fafc;font-size:13px;line-height:1.35}.num{flex:0 0 24px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#111827;color:#fff;font-size:12px;font-weight:800}.bookmarklet{display:flex;align-items:center;justify-content:center;min-height:50px;border-radius:12px;background:#111827;color:#fff;text-decoration:none;font-weight:800;cursor:grab;user-select:none}.bookmarklet.loading{opacity:.55;cursor:wait}.copy-btn{width:100%;height:40px;margin-top:9px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;font-weight:700;cursor:pointer}.hint{margin-top:9px!important;font-size:11px!important;text-align:center}.login-btn{width:100%;border:0;border-radius:14px;padding:17px 28px;background:#7c3aed;color:#fff;font-size:18px;font-weight:800;cursor:pointer;box-shadow:0 12px 30px rgba(124,58,237,.25)}.login-note{text-align:center;color:var(--muted);font-size:12px;margin:8px 0 0}.wrap{max-width:1200px;margin:auto;padding:28px 14px 60px}.status{padding:13px 14px;border-radius:11px;background:#eef2ff;margin-bottom:14px}.ok{background:#e9f8ef;color:#216a43}.bad{background:#fdecec;color:#8b3030}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.stat{padding:12px;border-radius:10px;background:#f5f6fa}.stat b{display:block;font-size:22px}.days{display:grid;gap:10px;margin-top:15px}.day{border:1px solid #e2e8f0;border-radius:12px;overflow:hidden}.day-head{padding:9px 11px;background:#f8fafc;font-weight:800}.acts{padding:7px 10px}.act{padding:6px 0;border-top:1px solid #edf2f7;font-size:12px}.act:first-child{border-top:0}.muted{color:var(--muted)}@media(max-width:650px){.summary{grid-template-columns:1fr}}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#eef1f5}.start{min-height:100vh;display:grid;place-items:center;padding:24px}.stack{width:min(470px,calc(100vw - 32px));display:grid;gap:14px}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 12px 35px rgba(15,23,42,.09)}h1,h2,p{margin-top:0}.setup h2{margin-bottom:8px}.setup p{color:var(--muted);font-size:13px;line-height:1.45}.steps{display:grid;gap:8px;margin:14px 0}.step{display:flex;gap:9px;align-items:flex-start;padding:10px;border-radius:10px;background:#f8fafc;font-size:13px;line-height:1.35}.num{flex:0 0 24px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#111827;color:#fff;font-size:12px;font-weight:800}.bookmarklet{display:flex;align-items:center;justify-content:center;min-height:50px;border-radius:12px;background:#111827;color:#fff;text-decoration:none;font-weight:800;cursor:grab;user-select:none}.bookmarklet.loading{opacity:.55;cursor:wait}.copy-btn{width:100%;height:40px;margin-top:9px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;font-weight:700;cursor:pointer}.hint{margin-top:9px!important;font-size:11px!important;text-align:center}.login-btn{width:100%;border:0;border-radius:14px;padding:17px 28px;background:#ca8a04;color:#fff;font-size:18px;font-weight:800;cursor:pointer;box-shadow:0 12px 30px rgba(202,138,4,.28)}.login-note{text-align:center;color:var(--muted);font-size:12px;margin:8px 0 0}.wrap{max-width:1200px;margin:auto;padding:28px 14px 60px}.status{padding:13px 14px;border-radius:11px;background:#eef2ff;margin-bottom:14px}.ok{background:#e9f8ef;color:#216a43}.bad{background:#fdecec;color:#8b3030}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.stat{padding:12px;border-radius:10px;background:#f5f6fa}.stat b{display:block;font-size:22px}.days{display:grid;gap:10px;margin-top:15px}.day{border:1px solid #e2e8f0;border-radius:12px;overflow:hidden}.day-head{padding:9px 11px;background:#f8fafc;font-weight:800}.acts{padding:7px 10px}.act{padding:6px 0;border-top:1px solid #edf2f7;font-size:12px}.act:first-child{border-top:0}.muted{color:var(--muted)}@media(max-width:650px){.summary{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <section id="start" class="start">
   <div class="stack">
     <div class="card setup">
-      <h2>WFM Scanner in Edge · v16</h2>
-      <p>Geen teamkeuze en geen extra scanvenster meer. De favoriet start de bestaande WFM-scanner direct in het actieve WFM-tabblad.</p>
+      <h2>WFM Scanner in Edge · v17</h2>
+      <p>Geen lokale installatie. De WFM Scanner blijft één favoriet in Edge. Nieuw in v17: zodra je WFM opent, verschijnt automatisch een klein zwevend instructievenster dat je eraan herinnert wanneer je op <b>⭐ WFM Scanner</b> moet klikken.</p>
       <div class="steps">
-        <div class="step"><span class="num">1</span><span>Maak de favorietenbalk zichtbaar in Edge met <b>Ctrl+Shift+B</b>.</span></div>
+        <div class="step"><span class="num">1</span><span>Maak de favorietenbalk zichtbaar met <b>Ctrl+Shift+B</b>.</span></div>
         <div class="step"><span class="num">2</span><span>Sleep <b>⭐ WFM Scanner</b> hieronder één keer naar je favorietenbalk.</span></div>
-        <div class="step"><span class="num">3</span><span>Open WFM en log in. Zodra <b>My Schedule</b> zichtbaar is, klik je één keer op <b>⭐ WFM Scanner</b>.</span></div>
-        <div class="step"><span class="num">4</span><span>Daarna gaat het automatisch: <b>6 weeks instellen → rooster scannen → importeren naar deze testpagina → WFM sluiten.</b></span></div>
+        <div class="step"><span class="num">3</span><span>Klik op <b>Rooster Log in</b>. WFM opent en daarnaast verschijnt de blijvende herinnering.</span></div>
+        <div class="step"><span class="num">4</span><span>Na het inloggen, zodra <b>My Schedule</b> zichtbaar is, klik je één keer op <b>⭐ WFM Scanner</b>. Daarna gaat 6 weeks → scan → import automatisch.</span></div>
       </div>
       <a id="bookmarklet" class="bookmarklet loading" href="#" draggable="true">⭐ WFM Scanner laden…</a>
       <button id="copyBookmarklet" class="copy-btn" type="button">Favoriet-code kopiëren</button>
       <p id="bookmarkletNote" class="hint">De directe scanner wordt geladen…</p>
     </div>
     <div class="card">
-      <button id="openWfm" class="login-btn" type="button">Rooster Log in · v16</button>
-      <p class="login-note">Na het inloggen hoef je alleen nog op ⭐ WFM Scanner in je favorietenbalk te klikken.</p>
+      <button id="openWfm" class="login-btn" type="button">Rooster Log in · v17</button>
+      <p class="login-note">Bij het openen van WFM verschijnt automatisch een zwevende herinnering: “Na inloggen: klik ⭐ WFM Scanner”.</p>
     </div>
   </div>
 </section>
@@ -41,9 +41,9 @@
 const WFM_ORIGIN='https://genesyswfm.hosting.corp';
 const WFM_URL=`${WFM_ORIGIN}/wfm/Login.jsp`;
 const start=document.getElementById('start'),content=document.getElementById('content'),status=document.getElementById('status'),result=document.getElementById('result'),openButton=document.getElementById('openWfm'),bookmarklet=document.getElementById('bookmarklet'),copyBookmarklet=document.getElementById('copyBookmarklet'),bookmarkletNote=document.getElementById('bookmarkletNote');
-let wfmWindow=null,bookmarkletCode='';
+let wfmWindow=null,bookmarkletCode='',guideWindow=null;
 window.name='wfmTestReceiver';
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function loadBookmarklet(){
   try{
     const r=await fetch('WFM-Planning-Scan-Send-Bookmarklet.txt?v='+Date.now(),{cache:'no-store'});
@@ -53,7 +53,7 @@ async function loadBookmarklet(){
     bookmarklet.href=bookmarkletCode;
     bookmarklet.textContent='⭐ WFM Scanner';
     bookmarklet.classList.remove('loading');
-    bookmarkletNote.textContent='Sleep deze knop één keer naar de Edge-favorietenbalk. Daarna start één klik in WFM direct de volledige 6-weken-scan.';
+    bookmarkletNote.textContent='Sleep deze knop één keer naar de Edge-favorietenbalk. Daarna is hij voor volgende WFM-sessies beschikbaar.';
   }catch(err){
     bookmarklet.textContent='Scannerlink laden mislukt';
     bookmarkletNote.textContent=err?.message||String(err)
@@ -61,22 +61,53 @@ async function loadBookmarklet(){
 }
 copyBookmarklet.addEventListener('click',async()=>{
   if(!bookmarkletCode){bookmarkletNote.textContent='Wacht tot de scannerlink geladen is.';return}
-  try{
-    await navigator.clipboard.writeText(bookmarkletCode);
-    bookmarkletNote.textContent='Favoriet-code gekopieerd.'
-  }catch(_){
-    bookmarkletNote.textContent='Kopiëren lukte niet; sleep de zwarte knop naar de favorietenbalk.'
-  }
+  try{await navigator.clipboard.writeText(bookmarkletCode);bookmarkletNote.textContent='Favoriet-code gekopieerd.'}
+  catch(_){bookmarkletNote.textContent='Kopiëren lukte niet; sleep de zwarte knop naar de favorietenbalk.'}
 });
 bookmarklet.addEventListener('click',e=>{
   e.preventDefault();
-  bookmarkletNote.textContent='Niet op deze pagina uitvoeren. Sleep hem naar je favorietenbalk en klik hem daarna terwijl WFM My Schedule actief is.'
+  bookmarkletNote.textContent='Niet op deze pagina uitvoeren. Sleep hem naar de favorietenbalk en klik hem daarna terwijl WFM My Schedule actief is.'
 });
+function closeGuide(){
+  if(!guideWindow)return;
+  try{if(!guideWindow.closed)guideWindow.close()}catch(_){}
+  guideWindow=null
+}
+function guideHtml(mode){
+  const pipText=mode==='pip'?'Dit venster blijft als Edge Picture-in-Picture boven WFM staan.':'Laat dit venster naast WFM open staan.';
+  return `<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WFM Scanner herinnering</title><style>*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;font-family:Segoe UI,Arial,sans-serif;background:#0f172a;color:#fff}body{display:grid;place-items:center;padding:16px}.box{width:100%;background:#111827;border:1px solid #334155;border-radius:18px;padding:18px;text-align:center;box-shadow:0 16px 45px rgba(0,0,0,.35)}.star{font-size:32px;line-height:1;margin-bottom:8px}h1{font-size:20px;margin:0 0 9px}.lead{font-size:14px;line-height:1.45;color:#cbd5e1;margin:0 0 14px}.action{background:#fbbf24;color:#111827;border-radius:13px;padding:13px 12px;font-weight:900;font-size:17px;line-height:1.25}.small{font-size:11px;line-height:1.4;color:#94a3b8;margin:12px 0 0}.keys{display:inline-block;margin-top:7px;padding:4px 8px;border-radius:7px;background:#1e293b;color:#e2e8f0;font-size:11px}button{margin-top:12px;border:1px solid #475569;background:#1e293b;color:#fff;border-radius:9px;padding:8px 12px;font-weight:700;cursor:pointer}</style></head><body><div class="box"><div class="star">⭐</div><h1>Eerst inloggen bij WFM</h1><p class="lead">Zodra <b>My Schedule</b> zichtbaar is:</p><div class="action">KLIK BOVENIN EDGE OP<br>⭐ WFM Scanner</div><div class="keys">Favorietenbalk weg? Ctrl + Shift + B</div><p class="small">${pipText}<br>Na de scannerklik gaat 6 weeks → scannen → importeren automatisch.</p><button id="closeGuide" type="button">Herinnering sluiten</button></div></body></html>`
+}
+function fillGuide(win,mode){
+  guideWindow=win;
+  try{
+    const d=win.document;
+    d.open();d.write(guideHtml(mode));d.close();
+    d.getElementById('closeGuide')?.addEventListener('click',closeGuide)
+  }catch(_){ }
+}
+function openFallbackGuide(){
+  const width=390,height=390,left=Math.max(0,screen.availWidth-width-24),top=70;
+  let w=null;
+  try{w=window.open('about:blank','wfmScannerReminder',`popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no`)}catch(_){w=null}
+  if(w)fillGuide(w,'popup')
+}
+function openGuide(){
+  closeGuide();
+  if('documentPictureInPicture' in window){
+    try{
+      const pending=documentPictureInPicture.requestWindow({width:390,height:390});
+      pending.then(w=>fillGuide(w,'pip')).catch(()=>openFallbackGuide());
+      return
+    }catch(_){ }
+  }
+  openFallbackGuide()
+}
 function openWfm(){
   result.hidden=true;
   status.hidden=true;
   content.hidden=true;
   try{wfmWindow=window.open(WFM_URL,'wfmLiveTestWindow')}catch(_){wfmWindow=null}
+  openGuide();
   if(!wfmWindow){
     content.hidden=false;
     status.hidden=false;
@@ -105,6 +136,7 @@ window.addEventListener('message',event=>{
   if(wfmWindow&&event.source!==wfmWindow)return;
   const data=event.data;
   if(!data||data.type!=='wfm-live-scan'||!Array.isArray(data?.payload?.schedules))return;
+  closeGuide();
   render(data);
   try{event.source?.postMessage({type:'wfm-live-ack',receivedAt:new Date().toISOString()},WFM_ORIGIN)}catch(_){}
   setTimeout(()=>{
@@ -112,6 +144,7 @@ window.addEventListener('message',event=>{
     wfmWindow=null
   },130)
 });
+window.addEventListener('beforeunload',closeGuide);
 loadBookmarklet();
 })();
 </script>
