@@ -24,17 +24,7 @@ jobs:
           if 'TESTVARIANT · Av30' not in s or "data.version==='av30'" not in s:
               raise SystemExit('Expected Av30 A-test baseline not found in index.html')
           s=s.replace('Av30','Av31').replace('AV30','AV31').replace('av30','av31')
-          colors={
-              '#b45309':'#0f766e',
-              '#f59e0b':'#14b8a6',
-              '#92400e':'#115e59',
-              '#fef3c7':'#ccfbf1',
-              '#fcd34d':'#5eead4',
-              'rgba(180,83,9,.25)':'rgba(15,118,110,.25)',
-              'rgba(146,64,14,.14)':'rgba(17,94,89,.14)',
-              'rgba(245,158,11,.26)':'rgba(20,184,166,.26)',
-              'rgba(245,158,11,.32)':'rgba(20,184,166,.32)'
-          }
+          colors={'#b45309':'#0f766e','#f59e0b':'#14b8a6','#92400e':'#115e59','#fef3c7':'#ccfbf1','#fcd34d':'#5eead4','rgba(180,83,9,.25)':'rgba(15,118,110,.25)','rgba(146,64,14,.14)':'rgba(17,94,89,.14)','rgba(245,158,11,.26)':'rgba(20,184,166,.26)','rgba(245,158,11,.32)':'rgba(20,184,166,.32)'}
           for old,new in colors.items():
               s=s.replace(old,new)
           p.write_text(s,encoding='utf-8')
@@ -51,28 +41,11 @@ jobs:
           if "A.OVERLAY_ID='wfm-auto-overlay-v30';" not in s:
               raise SystemExit('Expected Av30 overlay id not found')
           s=s.replace("A.OVERLAY_ID='wfm-auto-overlay-v30';","A.OVERLAY_ID='wfm-auto-overlay-v31';",1)
-
-          old="""  const sidePad=46,fieldLeft=pr.left,fieldRight=pr.right;
-  let left=fieldLeft-sidePad,right=fieldRight+sidePad;
-  left=Math.max(14,left);right=Math.min(w.innerWidth-14,right);
-  const width=Math.max(1,right-left);
-  let top=coreTop-245,bottom=coreBottom+50;
-  top=Math.max(18,top);bottom=Math.min(w.innerHeight-18,bottom);
-  if(bottom-top<430){const need=430-(bottom-top),up=Math.min(need,Math.max(0,top-18));top-=up;bottom=Math.min(w.innerHeight-18,bottom+(need-up))}
-  return{left,top,right,bottom,width,height:bottom-top}"""
-          new="""  const sidePad=46,fieldLeft=pr.left,fieldRight=pr.right;
-  let left=fieldLeft-sidePad,right=fieldRight+sidePad;
-  left=Math.max(14,left);right=Math.min(w.innerWidth-14,right);
-  const width=Math.max(1,right-left);
-  const headerCandidates=[...d.querySelectorAll('img,h1,h2,h3,h4,p,span,div,td,strong,b')].map(e=>({e,r:e.getBoundingClientRect(),t:(A.txt(e)+' '+String(e.getAttribute?.('alt')||'')+' '+String(e.getAttribute?.('title')||'')).toLowerCase()})).filter(x=>A.visible(x.e,w)&&x.r.bottom<=coreTop-8&&x.r.bottom>=coreTop-290&&Math.abs((x.r.left+x.r.right)/2-pc)<=85&&x.r.width<=pr.width+120&&(/genesys|workforce management|version/.test(x.t)||(x.e.tagName==='IMG'&&x.r.width<=260&&x.r.height<=110)));
-  const visualTop=headerCandidates.length?Math.min(...headerCandidates.map(x=>x.r.top)):coreTop-205;
-  let top=visualTop-sidePad,bottom=coreBottom+sidePad;
-  top=Math.max(18,top);bottom=Math.min(w.innerHeight-18,bottom);
-  return{left,top,right,bottom,width,height:bottom-top}"""
+          old='  const sidePad=46,fieldLeft=pr.left,fieldRight=pr.right;\n  let left=fieldLeft-sidePad,right=fieldRight+sidePad;\n  left=Math.max(14,left);right=Math.min(w.innerWidth-14,right);\n  const width=Math.max(1,right-left);\n  let top=coreTop-245,bottom=coreBottom+50;\n  top=Math.max(18,top);bottom=Math.min(w.innerHeight-18,bottom);\n  if(bottom-top<430){const need=430-(bottom-top),up=Math.min(need,Math.max(0,top-18));top-=up;bottom=Math.min(w.innerHeight-18,bottom+(need-up))}\n  return{left,top,right,bottom,width,height:bottom-top}'
+          new='  const sidePad=46,fieldLeft=pr.left,fieldRight=pr.right;\n  let left=fieldLeft-sidePad,right=fieldRight+sidePad;\n  left=Math.max(14,left);right=Math.min(w.innerWidth-14,right);\n  const width=Math.max(1,right-left);\n  const headerCandidates=[...d.querySelectorAll(\'img,h1,h2,h3,h4,p,span,div,td,strong,b\')].map(e=>({e,r:e.getBoundingClientRect(),t:(A.txt(e)+\' \'+String(e.getAttribute?.(\'alt\')||\'\')+\' \'+String(e.getAttribute?.(\'title\')||\'\')).toLowerCase()})).filter(x=>A.visible(x.e,w)&&x.r.bottom<=coreTop-8&&x.r.bottom>=coreTop-290&&Math.abs((x.r.left+x.r.right)/2-pc)<=85&&x.r.width<=pr.width+120&&(/genesys|workforce management|version/.test(x.t)||(x.e.tagName===\'IMG\'&&x.r.width<=260&&x.r.height<=110)));\n  const visualTop=headerCandidates.length?Math.min(...headerCandidates.map(x=>x.r.top)):coreTop-205;\n  let top=visualTop-sidePad,bottom=coreBottom+sidePad;\n  top=Math.max(18,top);bottom=Math.min(w.innerHeight-18,bottom);\n  return{left,top,right,bottom,width,height:bottom-top}'
           if old not in s:
               raise SystemExit('Expected Av30 margin block not found')
           s=s.replace(old,new,1)
-
           s=s.replace('background:#0b1f3a;pointer-events:auto','background:#2a1038;pointer-events:auto',1)
           s=s.replace('background:#0b1f3a;pointer-events:none','background:#2a1038;pointer-events:none',1)
           s=s.replace('0 0 0 9999px #0b1f3a;pointer-events:none','0 0 0 9999px #2a1038;pointer-events:none',1)
