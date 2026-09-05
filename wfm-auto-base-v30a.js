@@ -16,16 +16,53 @@ A.receiver=()=>{try{const t=A.target();return t&&t.opener&&!t.opener.closed?t.op
 A.txt=e=>String(e?.innerText||e?.textContent||e?.value||'').replace(/\s+/g,' ').trim();
 A.overlayTemplate=d=>{
   const root=d.createElement('div');root.id=A.OVERLAY_ID;
-  root.innerHTML='<div data-wfm-card><video data-wfm-video playsinline preload="auto"></video><div data-wfm-badge>⭐ WFM Scanner</div><div data-wfm-state></div><div data-wfm-detail></div><div data-wfm-progress><div data-step="login"><b>1</b><span>Inloggen</span></div><div data-step="six"><b>2</b><span>6 weken laden</span></div><div data-step="scan"><b>3</b><span>Rooster scannen</span></div><div data-step="import"><b>4</b><span>Importeren</span></div></div></div>';
-  const video=root.querySelector('[data-wfm-video]');if(video){video.src=A.VIDEO_URL;video.muted=false;video.defaultMuted=false;video.volume=1;video.loop=false;video.playsInline=true;}
+  root.innerHTML='<div data-wfm-mask="top"></div><div data-wfm-mask="left"></div><div data-wfm-mask="right"></div><div data-wfm-mask="bottom"></div><div data-wfm-login-frame></div>';
   try{(d.body||d.documentElement).appendChild(root)}catch(_){}
   return root
 };
 A.ensureOverlay=()=>{const d=A.targetDoc();if(!d)return null;let root=d.getElementById(A.OVERLAY_ID);if(!root)root=A.overlayTemplate(d);return root};
+A.loginRect=()=>{try{
+  const w=A.target(),d=A.targetDoc();if(!w||!d)return null;
+  const pwd=d.querySelector('input[type="password"]');if(!pwd||!A.visible(pwd,w))return null;
+  const form=pwd.closest('form')||d;
+  const inputs=[...form.querySelectorAll('input')].filter(e=>e!==pwd&&!['hidden','password','submit','button','checkbox','radio'].includes(String(e.type||'text').toLowerCase())&&A.visible(e,w));
+  const user=inputs[0]||null;
+  const buttons=[...form.querySelectorAll('button,input[type="submit"],input[type="button"]')].filter(e=>A.visible(e,w));
+  const submit=buttons.find(e=>/log\s*in|login|sign\s*in|aanmeld/i.test(A.txt(e)))||buttons.find(e=>String(e.type||'').toLowerCase()==='submit')||buttons[0]||null;
+  const nodes=[user,pwd,submit].filter(Boolean);
+  for(const e of [user,pwd]){if(!e?.id)continue;const label=[...d.querySelectorAll('label')].find(l=>l.htmlFor===e.id);if(label&&A.visible(label,w))nodes.push(label)}
+  if(!nodes.length)return null;
+  const rs=nodes.map(e=>e.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);
+  if(!rs.length)return null;
+  let left=Math.min(...rs.map(r=>r.left))-42,right=Math.max(...rs.map(r=>r.right))+42,top=Math.min(...rs.map(r=>r.top))-48,bottom=Math.max(...rs.map(r=>r.bottom))+42;
+  left=Math.max(12,left);top=Math.max(12,top);right=Math.min(w.innerWidth-12,right);bottom=Math.min(w.innerHeight-12,bottom);
+  if(right-left<320){const c=(left+right)/2;left=Math.max(12,c-160);right=Math.min(w.innerWidth-12,c+160)}
+  if(bottom-top<190){const c=(top+bottom)/2;top=Math.max(12,c-95);bottom=Math.min(w.innerHeight-12,c+95)}
+  return{left,top,right,bottom,width:right-left,height:bottom-top}
+}catch(_){return null}};
 A.paintOverlay=()=>{try{
-  const d=A.targetDoc();
-  d?.getElementById('wfm-auto-starting-v27')?.remove();
-  d?.getElementById(A.OVERLAY_ID)?.remove();
+  const w=A.target(),d=A.targetDoc();if(!w||!d)return;
+  d.getElementById('wfm-auto-starting-v27')?.remove();
+  const root=A.ensureOverlay();if(!root)return;
+  root.style.cssText='position:fixed;inset:0;z-index:2147483647;pointer-events:none;font-family:Segoe UI,Arial,sans-serif';
+  let href='';try{href=w.location.href}catch(_){}
+  const loginPage=/\/wfm\/Login\.jsp/i.test(href),showLoginHole=loginPage&&A.ui.mode!=='processing';
+  const topMask=root.querySelector('[data-wfm-mask="top"]'),leftMask=root.querySelector('[data-wfm-mask="left"]'),rightMask=root.querySelector('[data-wfm-mask="right"]'),bottomMask=root.querySelector('[data-wfm-mask="bottom"]'),frame=root.querySelector('[data-wfm-login-frame]');
+  const masks=[topMask,leftMask,rightMask,bottomMask];
+  const base='position:fixed;background:#000;pointer-events:auto;margin:0;padding:0;border:0;';
+  if(!showLoginHole){
+    topMask.style.cssText=base+'inset:0;';
+    leftMask.style.cssText=rightMask.style.cssText=bottomMask.style.cssText='display:none';
+    frame.style.cssText='display:none';
+    return
+  }
+  let r=A.loginRect();
+  if(!r){const ww=Math.min(540,Math.max(360,w.innerWidth*.42)),hh=Math.min(360,Math.max(240,w.innerHeight*.42)),left=(w.innerWidth-ww)/2,top=(w.innerHeight-hh)/2;r={left,top,right:left+ww,bottom:top+hh,width:ww,height:hh}}
+  topMask.style.cssText=base+`left:0;top:0;width:100%;height:${Math.max(0,r.top)}px;`;
+  bottomMask.style.cssText=base+`left:0;top:${Math.max(0,r.bottom)}px;width:100%;bottom:0;`;
+  leftMask.style.cssText=base+`left:0;top:${Math.max(0,r.top)}px;width:${Math.max(0,r.left)}px;height:${Math.max(0,r.height)}px;`;
+  rightMask.style.cssText=base+`left:${Math.max(0,r.right)}px;right:0;top:${Math.max(0,r.top)}px;height:${Math.max(0,r.height)}px;`;
+  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border:2px solid rgba(255,255,255,.72);border-radius:18px;box-shadow:0 0 0 1px rgba(0,0,0,.65);pointer-events:none;`;
 }catch(_){} };
 A.paintController=()=>{try{const s=document.getElementById('state'),d=document.getElementById('detail');if(s)s.textContent=A.ui.text;if(d)d.textContent=A.ui.detail||''}catch(_){} };
 A.report=()=>{try{A.receiver()?.postMessage({type:'wfm-scanner-status',mode:A.ui.mode,text:A.ui.text,detail:A.ui.detail,kind:A.ui.kind,progress:A.ui.progress},A.TEST_ORIGIN)}catch(_){} };
