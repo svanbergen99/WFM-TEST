@@ -1,0 +1,66 @@
+name: Temporary Av23 popup fix
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/av23-popup.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply Av23 safe popup sizing
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          if 'TESTVARIANT · Av22' not in s:
+              raise SystemExit('Av22 baseline not found')
+
+          s = s.replace('Av22', 'Av23').replace('av22', 'av23')
+
+          colors = {
+              '#ea580c':'#a16207',
+              '#f97316':'#eab308',
+              '#9a3412':'#854d0e',
+              '#fed7aa':'#fde68a',
+              '#fdba74':'#fde68a',
+              '#fb923c':'#facc15',
+              'rgba(234,88,12,.25)':'rgba(161,98,7,.25)',
+              'rgba(154,52,18,.12)':'rgba(133,77,14,.12)',
+              'rgba(249,115,22,.26)':'rgba(234,179,8,.26)',
+              'rgba(249,115,22,.32)':'rgba(234,179,8,.32)'
+          }
+          for old,new in colors.items():
+              s = s.replace(old,new)
+
+          pat = r"function openGuideA\(watchMs=6000\)\{.*?\}\nfunction openWfmA"
+          replacement = """function openGuideA(watchMs=6000){closeGuide();let wx=window.screenX||0,wy=window.screenY||0,ow=window.outerWidth||screen.availWidth,oh=window.outerHeight||screen.availHeight,ih=window.innerHeight||Math.max(1,oh-140);try{if(wfmWindow&&!wfmWindow.closed){const x=Number(wfmWindow.screenX),y=Number(wfmWindow.screenY),ww=Number(wfmWindow.outerWidth),wh=Number(wfmWindow.outerHeight),wi=Number(wfmWindow.innerHeight);if(Number.isFinite(x))wx=x;if(Number.isFinite(y))wy=y;if(ww>0)ow=ww;if(wh>0)oh=wh;if(wi>0)ih=wi}}catch(_){}const browserChrome=Math.max(0,oh-ih),reservedTop=Math.min(Math.max(browserChrome+72,200),Math.max(120,oh-280)),sideGap=20,bottomGap=18,left=Math.round(wx+sideGap),top=Math.round(wy+reservedTop),width=Math.max(320,Math.round(ow-sideGap*2)),height=Math.max(220,Math.round(oh-reservedTop-bottomGap));let w=null;try{w=window.open('about:blank','wfmScannerReminderV30A',`popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no`)}catch(_){w=null}if(!w)return;guideWindow=w;try{const d=w.document;d.open();d.write(guideHtmlA(watchMs));d.close();setTimeout(()=>{try{w.moveTo(left,top);w.resizeTo(width,height)}catch(_){}},80)}catch(_){} }
+function openWfmA"""
+          s, n = re.subn(pat, replacement, s, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit(f'openGuideA replacement count={n}')
+          if 'Av22' in s or 'av22' in s:
+              raise SystemExit('Old Av22 version marker remains in index.html')
+          p.write_text(s, encoding='utf-8')
+
+          b = Path('WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt')
+          t = b.read_text(encoding='utf-8')
+          if 'Av22' not in t or 'version:"av22"' not in t:
+              raise SystemExit('Av22 bookmarklet baseline not found')
+          t = t.replace('Av22','Av23').replace('av22','av23')
+          if 'Av22' in t or 'av22' in t:
+              raise SystemExit('Old Av22 marker remains in bookmarklet')
+          b.write_text(t, encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt
+          git diff --cached --quiet || git commit -m 'Av23: keep scanner popup below favorites bar'
+          git push
