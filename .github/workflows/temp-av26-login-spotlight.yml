@@ -1,0 +1,100 @@
+name: Temporary Av26 login spotlight update
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-av26-login-spotlight.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply Av26
+        shell: bash
+        run: |
+          set -e
+          python - <<'PY'
+          from pathlib import Path
+
+          # index.html: A-test only — version bump + clearly new orange/coral accent.
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          if 'TESTVARIANT · Av25' not in s or "data.version==='av25'" not in s:
+              raise SystemExit('Expected Av25 A-test baseline not found in index.html')
+          s=s.replace('Av25','Av26').replace('AV25','AV26').replace('av25','av26')
+          colors={
+              '#0891b2':'#ea580c',
+              '#06b6d4':'#f97316',
+              '#0e7490':'#c2410c',
+              '#cffafe':'#ffedd5',
+              '#67e8f9':'#fdba74',
+              'rgba(8,145,178,.25)':'rgba(234,88,12,.25)',
+              'rgba(14,116,144,.14)':'rgba(194,65,12,.14)',
+              'rgba(6,182,212,.26)':'rgba(249,115,22,.26)',
+              'rgba(6,182,212,.32)':'rgba(249,115,22,.32)'
+          }
+          for old,new in colors.items():
+              s=s.replace(old,new)
+          p.write_text(s,encoding='utf-8')
+
+          # Static Edge favorite: Av26 must be reinstalled and announce av26.
+          p=Path('WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt')
+          s=p.read_text(encoding='utf-8')
+          if 'WFM Scanner Av25' not in s or 'version:"av25"' not in s:
+              raise SystemExit('Expected Av25 bookmarklet baseline not found')
+          s=s.replace('Av25','Av26').replace('AV25','AV26').replace('av25','av26')
+          p.write_text(s,encoding='utf-8')
+
+          # Visual A-base only. Horizontal bounds come strictly from login controls.
+          p=Path('wfm-auto-base-v30a.js')
+          s=p.read_text(encoding='utf-8')
+          start=s.index('A.loginRect=()=>{try{')
+          end=s.index('A.paintOverlay=()=>{try{',start)
+          new_rect=r'''A.loginRect=()=>{try{
+  const w=A.target(),d=A.targetDoc();if(!w||!d)return null;
+  const pwd=d.querySelector('input[type="password"]');if(!pwd||!A.visible(pwd,w))return null;
+  const form=pwd.closest('form')||d;
+  const inputs=[...form.querySelectorAll('input')].filter(e=>e!==pwd&&!['hidden','password','submit','button','checkbox','radio'].includes(String(e.type||'text').toLowerCase())&&A.visible(e,w));
+  const user=inputs[0]||null;
+  const buttons=[...form.querySelectorAll('button,input[type="submit"],input[type="button"]')].filter(e=>A.visible(e,w));
+  const submit=buttons.find(e=>/log\s*in|login|sign\s*in|aanmeld/i.test(A.txt(e)))||buttons.find(e=>String(e.type||'').toLowerCase()==='submit')||buttons[0]||null;
+  const core=[user,pwd,submit].filter(Boolean);if(!core.length)return null;
+  const rs=core.map(e=>e.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);if(!rs.length)return null;
+  const coreLeft=Math.min(...rs.map(r=>r.left)),coreRight=Math.max(...rs.map(r=>r.right)),coreTop=Math.min(...rs.map(r=>r.top)),coreBottom=Math.max(...rs.map(r=>r.bottom));
+  const center=(coreLeft+coreRight)/2,coreWidth=coreRight-coreLeft;
+  let width=Math.max(390,coreWidth+76);width=Math.min(width,460,Math.max(280,w.innerWidth-28));
+  let left=center-width/2;left=Math.max(14,Math.min(left,w.innerWidth-14-width));
+  let top=coreTop-225,bottom=coreBottom+52;
+  top=Math.max(18,top);bottom=Math.min(w.innerHeight-18,bottom);
+  if(bottom-top<400){const need=400-(bottom-top),up=Math.min(need,Math.max(0,top-18));top-=up;bottom=Math.min(w.innerHeight-18,bottom+(need-up))}
+  return{left,top,right:left+width,bottom,width,height:bottom-top}
+}catch(_){return null}};
+'''
+          s=s[:start]+new_rect+s[end:]
+          old="const radius=Math.min(76,Math.max(48,r.width*.14));\n  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(207,250,254,.52);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 0 34px rgba(103,232,249,.17),0 20px 56px rgba(0,0,0,.34),0 0 0 9999px #000;pointer-events:none;z-index:2;`;"
+          new="const radius=Math.min(64,Math.max(44,r.width*.13));\n  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(255,237,213,.58);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 0 30px rgba(251,146,60,.18),0 18px 52px rgba(0,0,0,.34),0 0 0 9999px #000;pointer-events:none;z-index:2;`;"
+          if old not in s:
+              raise SystemExit('Expected Av25 spotlight style not found')
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+
+          node --check wfm-auto-base-v30a.js
+          git diff --check
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' 'WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt' 'index.html' 'wfm-auto-base-v30a.js' | sort)"
+          test "$changed" = "$expected"
+          grep -q 'TESTVARIANT · Av26' index.html
+          grep -q "data.version==='av26'" index.html
+          grep -q 'WFM Scanner Av26' WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt
+          grep -q 'version:"av26"' WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt
+          grep -q 'let width=Math.max(390,coreWidth+76)' wfm-auto-base-v30a.js
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt wfm-auto-base-v30a.js
+          git commit -m 'Av26: focus spotlight on login column'
+          git push origin main
