@@ -1,1 +1,69 @@
-name: placeholder
+name: Av36 once
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/av36-once.yml']
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply Av36
+        shell: python
+        run: |
+          from pathlib import Path
+          files = [Path('index.html'), Path('WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt'), Path('wfm-auto-base-v30a.js')]
+          for p in files:
+              s = p.read_text(encoding='utf-8')
+              s = s.replace('Av35','Av36').replace('AV35','AV36').replace('av35','av36')
+              p.write_text(s, encoding='utf-8')
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('#7c3aed','#0f766e').replace('#8b5cf6','#14b8a6').replace('#ede9fe','#ccfbf1').replace('#6d28d9','#115e59').replace('rgba(124,58,237,.25)','rgba(15,118,110,.25)').replace('rgba(139,92,246,.26)','rgba(20,184,166,.26)').replace('rgba(139,92,246,.32)','rgba(20,184,166,.32)').replace('rgba(109,40,217,.14)','rgba(17,94,89,.14)')
+          old = "function ensureTransitionMediaA(){if(transitionMediaA)return transitionMediaA;try{const v=document.createElement('video');v.src=A_TRANSITION_VIDEO;v.preload='auto';v.playsInline=true;v.loop=false;v.muted=false;v.defaultMuted=false;v.volume=1;v.style.cssText='position:fixed;width:1px;height:1px;left:-20px;top:-20px;opacity:.001;pointer-events:none';document.body.appendChild(v);try{v.load()}catch(_){}transitionMediaA=v;return v}catch(_){return null}}"
+          new = "function ensureTransitionMediaA(){if(transitionMediaA)return transitionMediaA;try{const v=document.createElement('video');v.src=A_TRANSITION_VIDEO;v.preload='auto';v.playsInline=true;v.loop=false;v.muted=false;v.defaultMuted=false;v.volume=1;v.style.cssText='position:fixed;width:1px;height:1px;left:-20px;top:-20px;opacity:.001;pointer-events:none';v.addEventListener('ended',()=>{transitionMediaActiveA=false;if(transitionSyncTimerA){clearInterval(transitionSyncTimerA);transitionSyncTimerA=null}try{if(scannerHelperWindow&&!scannerHelperWindow.closed)scannerHelperWindow.postMessage({type:'wfm-transition-media-ended'},WFM_ORIGIN)}catch(_){}},{once:false});document.body.appendChild(v);try{v.load()}catch(_){}transitionMediaA=v;return v}catch(_){return null}}"
+          if old not in s: raise SystemExit('index ensureTransitionMediaA baseline not found')
+          s = s.replace(old,new)
+          old = "function startTransitionMediaA(){const v=ensureTransitionMediaA();if(!v||v.ended)return;if(!transitionMediaActiveA){transitionMediaActiveA=true;try{v.currentTime=0}catch(_){}}try{v.muted=false;v.defaultMuted=false;v.volume=1;const p=v.play();p?.catch?.(()=>{})}catch(_){}if(!transitionSyncTimerA)transitionSyncTimerA=setInterval(()=>{try{if(scannerHelperWindow&&!scannerHelperWindow.closed&&transitionMediaA)scannerHelperWindow.postMessage({type:'wfm-transition-media-time',currentTime:transitionMediaA.currentTime||0},WFM_ORIGIN)}catch(_){}},80)}"
+          new = "function startTransitionMediaA(){const v=ensureTransitionMediaA();if(!v||v.ended||transitionMediaActiveA)return;transitionMediaActiveA=true;try{v.currentTime=0;v.muted=false;v.defaultMuted=false;v.volume=1;const p=v.play();p?.catch?.(()=>{transitionMediaActiveA=false})}catch(_){transitionMediaActiveA=false}if(!transitionSyncTimerA)transitionSyncTimerA=setInterval(()=>{try{if(scannerHelperWindow&&!scannerHelperWindow.closed&&transitionMediaA)scannerHelperWindow.postMessage({type:'wfm-transition-media-time',currentTime:transitionMediaA.currentTime||0},WFM_ORIGIN)}catch(_){}},80)}"
+          if old not in s: raise SystemExit('index startTransitionMediaA baseline not found')
+          s = s.replace(old,new)
+          p.write_text(s, encoding='utf-8')
+
+          p = Path('wfm-auto-base-v30a.js')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace("A.running=false;A.done=false;A.CLICK_THROUGH_SCAN=true;A.transitionMediaTime=0;A.transitionPaintTimer=null;A.loginSubmitted=false;A.loginSubmitAt=0;","A.running=false;A.done=false;A.CLICK_THROUGH_SCAN=true;A.transitionMediaTime=0;A.transitionPaintTimer=null;A.loginSubmitted=false;A.loginSubmitAt=0;A.videoFinished=false;")
+          s = s.replace("window.addEventListener('message',e=>{try{if(e.origin!==A.TEST_ORIGIN)return;const m=e.data||{};if(m.type==='wfm-transition-media-time'&&Number.isFinite(Number(m.currentTime)))A.transitionMediaTime=Number(m.currentTime)||0}catch(_){}});","window.addEventListener('message',e=>{try{if(e.origin!==A.TEST_ORIGIN)return;const m=e.data||{};if(m.type==='wfm-transition-media-time'&&Number.isFinite(Number(m.currentTime)))A.transitionMediaTime=Number(m.currentTime)||0;else if(m.type==='wfm-transition-media-ended'){A.videoFinished=true;A.paintOverlay()}}catch(_){}});")
+          old = "const video=root.querySelector('[data-wfm-video]');if(video){video.src=A.VIDEO_URL;video.preload='auto';video.muted=true;video.defaultMuted=true;video.volume=0;video.loop=false;video.playsInline=true;try{video.load()}catch(_){}}"
+          new = "const video=root.querySelector('[data-wfm-video]');if(video){video.src=A.VIDEO_URL;video.preload='auto';video.muted=true;video.defaultMuted=true;video.volume=0;video.loop=false;video.playsInline=true;video.addEventListener('ended',()=>{A.videoFinished=true;try{video.pause()}catch(_){}},{once:false});try{video.load()}catch(_){}}"
+          if old not in s: raise SystemExit('base video init baseline not found')
+          s = s.replace(old,new)
+          old = "if(video){video.style.cssText=processing?'display:block;position:fixed;inset:0;width:100vw;height:100vh;max-width:none;max-height:none;object-fit:contain;object-position:center center;border-radius:0;background:#000;pointer-events:none;z-index:2':'display:none';if(processing){video.muted=true;video.defaultMuted=true;video.volume=0;const mt=Number(A.transitionMediaTime)||0;try{if(!video.ended&&mt>0&&Math.abs((video.currentTime||0)-mt)>.30&&!video.seeking)video.currentTime=mt}catch(_){}if(video.paused&&!video.ended){try{const p=video.play();p?.catch?.(()=>{})}catch(_){}}}else{try{video.pause();if(video.currentTime)video.currentTime=0}catch(_){}}}"
+          new = "if(video){video.style.cssText=processing&&!A.videoFinished?'display:block;position:fixed;inset:0;width:100vw;height:100vh;max-width:none;max-height:none;object-fit:contain;object-position:center center;border-radius:0;background:#000;pointer-events:none;z-index:2':'display:none';if(processing&&!A.videoFinished){video.muted=true;video.defaultMuted=true;video.volume=0;const mt=Number(A.transitionMediaTime)||0,dur=Number(video.duration)||0;if((dur>0&&mt>=dur-.12)||video.ended){A.videoFinished=true;try{video.pause()}catch(_){}}else{try{if(mt>0&&Math.abs((video.currentTime||0)-mt)>.30&&!video.seeking)video.currentTime=mt}catch(_){}if(video.paused&&!video.ended){try{const p=video.play();p?.catch?.(()=>{})}catch(_){}}}}else{try{video.pause()}catch(_){}}}"
+          if old not in s: raise SystemExit('base processing video block baseline not found')
+          s = s.replace(old,new)
+          s = s.replace("const maskBg=(transitionBlack||processing)?'#000':'#0d1f2d';","const maskBg=(transitionBlack||processing)?'#000':'#102a2a';")
+          s = s.replace("0 0 30px rgba(253,186,116,.18)","0 0 30px rgba(94,234,212,.18)").replace("rgba(255,237,213,.62)","rgba(204,251,241,.62)").replace("0 0 0 9999px #0d1f2d","0 0 0 9999px #102a2a")
+          p.write_text(s, encoding='utf-8')
+      - name: Verify
+        run: |
+          node --check wfm-auto-base-v30a.js
+          grep -q "TESTVARIANT · Av36" index.html
+          grep -q "WFM Scanner Av36" WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt
+          grep -q "object-fit:contain" wfm-auto-base-v30a.js
+          grep -q "A.videoFinished" wfm-auto-base-v30a.js
+          test "$(git diff --name-only | grep -v '^.github/workflows/av36-once.yml$' | sort)" = $'WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt\nindex.html\nwfm-auto-base-v30a.js'
+      - name: Commit
+        run: |
+          rm -f .github/workflows/av36-once.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Av36: prevent processing video replay"
+          git push origin HEAD:main
