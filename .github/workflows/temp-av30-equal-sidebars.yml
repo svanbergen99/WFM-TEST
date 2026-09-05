@@ -1,0 +1,92 @@
+name: Temporary Av30 equal sidebars update
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-av30-equal-sidebars.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply Av30
+        shell: bash
+        run: |
+          set -e
+          python - <<'PY'
+          from pathlib import Path
+
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          if 'TESTVARIANT · Av29' not in s or "data.version==='av29'" not in s:
+              raise SystemExit('Expected Av29 A-test baseline not found in index.html')
+          s=s.replace('Av29','Av30').replace('AV29','AV30').replace('av29','av30')
+          colors={
+              '#6d28d9':'#b45309',
+              '#8b5cf6':'#f59e0b',
+              '#7e22ce':'#92400e',
+              '#ede9fe':'#fef3c7',
+              '#c4b5fd':'#fcd34d',
+              'rgba(109,40,217,.25)':'rgba(180,83,9,.25)',
+              'rgba(126,34,206,.14)':'rgba(146,64,14,.14)',
+              'rgba(139,92,246,.26)':'rgba(245,158,11,.26)',
+              'rgba(139,92,246,.32)':'rgba(245,158,11,.32)'
+          }
+          for old,new in colors.items():
+              s=s.replace(old,new)
+          p.write_text(s,encoding='utf-8')
+
+          p=Path('WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt')
+          s=p.read_text(encoding='utf-8')
+          if 'WFM Scanner Av29' not in s or 'version:"av29"' not in s:
+              raise SystemExit('Expected Av29 bookmarklet baseline not found')
+          s=s.replace('Av29','Av30').replace('AV29','AV30').replace('av29','av30')
+          p.write_text(s,encoding='utf-8')
+
+          p=Path('wfm-auto-base-v30a.js')
+          s=p.read_text(encoding='utf-8')
+          if "A.OVERLAY_ID='wfm-auto-overlay-v29';" not in s:
+              raise SystemExit('Expected Av29 overlay id not found')
+          s=s.replace("A.OVERLAY_ID='wfm-auto-overlay-v29';","A.OVERLAY_ID='wfm-auto-overlay-v30';",1)
+
+          old="const center=w.innerWidth/2,coreWidth=coreRight-coreLeft;\n  const sidePad=Math.max(28,Math.min(34,coreWidth*.10));let width=coreWidth+sidePad*2;width=Math.min(width,390,Math.max(280,w.innerWidth-28));\n  let left=center-width/2;left=Math.max(14,Math.min(left,w.innerWidth-14-width));"
+          new="const sidePad=46,fieldLeft=pr.left,fieldRight=pr.right;\n  let left=fieldLeft-sidePad,right=fieldRight+sidePad;\n  left=Math.max(14,left);right=Math.min(w.innerWidth-14,right);\n  const width=Math.max(1,right-left);"
+          if old not in s:
+              raise SystemExit('Expected Av29 spotlight width block not found')
+          s=s.replace(old,new,1)
+          oldret="return{left,top,right:left+width,bottom,width,height:bottom-top}"
+          newret="return{left,top,right,bottom,width,height:bottom-top}"
+          if oldret not in s:
+              raise SystemExit('Expected Av29 spotlight return not found')
+          s=s.replace(oldret,newret,1)
+
+          s=s.replace('background:#3b1d0f;pointer-events:auto','background:#0b1f3a;pointer-events:auto',1)
+          s=s.replace('background:#3b1d0f;pointer-events:none','background:#0b1f3a;pointer-events:none',1)
+          s=s.replace('0 0 0 9999px #3b1d0f;pointer-events:none','0 0 0 9999px #0b1f3a;pointer-events:none',1)
+          s=s.replace('rgba(237,233,254,.62)','rgba(254,243,199,.62)',1)
+          s=s.replace('rgba(196,181,253,.18)','rgba(252,211,77,.18)',1)
+          p.write_text(s,encoding='utf-8')
+          PY
+
+          node --check wfm-auto-base-v30a.js
+          git diff --check
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' 'WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt' 'index.html' 'wfm-auto-base-v30a.js' | sort)"
+          test "$changed" = "$expected"
+          grep -q 'TESTVARIANT · Av30' index.html
+          grep -q "data.version==='av30'" index.html
+          grep -q 'WFM Scanner Av30' WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt
+          grep -q 'version:"av30"' WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt
+          grep -q "A.OVERLAY_ID='wfm-auto-overlay-v30'" wfm-auto-base-v30a.js
+          grep -q 'const sidePad=46,fieldLeft=pr.left,fieldRight=pr.right' wfm-auto-base-v30a.js
+          grep -q 'return{left,top,right,bottom,width,height:bottom-top}' wfm-auto-base-v30a.js
+          grep -q 'background:#0b1f3a' wfm-auto-base-v30a.js
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt wfm-auto-base-v30a.js
+          git commit -m 'Av30: equalize overlay margins around login fields'
+          git push origin main
