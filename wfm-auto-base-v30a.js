@@ -4,7 +4,7 @@ const A=window.WFMAuto=window.WFMAuto||{};
 A.TEST_ORIGIN='https://svanbergen99.github.io';
 A.TEST_URL='https://svanbergen99.github.io/WFM-TEST/';
 A.VIDEO_URL=A.TEST_URL+'ff%20wachte.mp4';
-A.OVERLAY_ID='wfm-auto-overlay-v35';
+A.OVERLAY_ID='wfm-auto-overlay-v36';
 A.P=n=>String(n).padStart(2,'0');
 A.sleep=m=>new Promise(r=>setTimeout(r,m));
 A.MM={jan:1,feb:2,mrt:3,mar:3,apr:4,mei:5,may:5,jun:6,jul:7,aug:8,sep:9,okt:10,oct:10,nov:11,dec:12};
@@ -14,9 +14,9 @@ A.target=()=>{try{const t=window.WFMAutoTarget;if(t&&!t.closed)return t;return w
 A.targetDoc=()=>{try{return A.target()?.document||null}catch(_){return null}};
 A.receiver=()=>{try{const t=A.target();return t&&t.opener&&!t.opener.closed?t.opener:null}catch(_){return null}};
 A.txt=e=>String(e?.innerText||e?.textContent||e?.value||'').replace(/\s+/g,' ').trim();
-A.preloadVideo=()=>{try{let v=document.getElementById('wfm-auto-preload-video-v35');if(v)return v;v=document.createElement('video');v.id='wfm-auto-preload-video-v35';v.src=A.VIDEO_URL;v.preload='auto';v.playsInline=true;v.muted=true;v.defaultMuted=true;v.volume=0;v.style.cssText='position:fixed;width:1px;height:1px;left:-20px;top:-20px;opacity:.001;pointer-events:none';(document.body||document.documentElement).appendChild(v);try{v.load()}catch(_){}return v}catch(_){return null}};
+A.preloadVideo=()=>{try{let v=document.getElementById('wfm-auto-preload-video-v36');if(v)return v;v=document.createElement('video');v.id='wfm-auto-preload-video-v36';v.src=A.VIDEO_URL;v.preload='auto';v.playsInline=true;v.muted=true;v.defaultMuted=true;v.volume=0;v.style.cssText='position:fixed;width:1px;height:1px;left:-20px;top:-20px;opacity:.001;pointer-events:none';(document.body||document.documentElement).appendChild(v);try{v.load()}catch(_){}return v}catch(_){return null}};
 A.coverLoginNow=()=>{try{if(A.loginSubmitted)return;A.loginSubmitted=true;A.loginSubmitAt=Date.now();A.restoreLoginShift();if(!A.transitionPaintTimer)A.transitionPaintTimer=setInterval(()=>A.paintOverlay(),16);A.paintOverlay()}catch(_){}};
-A.armLoginCover=d=>{try{if(!d||d.__wfmAutoLoginCoverV35)return;d.__wfmAutoLoginCoverV35=true;const trigger=()=>A.coverLoginNow();d.addEventListener('submit',e=>{try{const f=e.target;if(f?.querySelector?.('input[type=\"password\"]'))trigger()}catch(_){}},true);d.addEventListener('click',e=>{try{const el=e.target?.closest?.('button,input[type=\"submit\"],input[type=\"button\"],[role=\"button\"]');if(el&&/log\s*in|login|sign\s*in|aanmeld/i.test(A.txt(el)))trigger()}catch(_){}},true)}catch(_){}};
+A.armLoginCover=d=>{try{if(!d||d.__wfmAutoLoginCoverV36)return;d.__wfmAutoLoginCoverV36=true;const trigger=()=>A.coverLoginNow();d.addEventListener('submit',e=>{try{const f=e.target;if(f?.querySelector?.('input[type=\"password\"]'))trigger()}catch(_){}},true);d.addEventListener('click',e=>{try{const el=e.target?.closest?.('button,input[type=\"submit\"],input[type=\"button\"],[role=\"button\"]');if(el&&/log\s*in|login|sign\s*in|aanmeld/i.test(A.txt(el)))trigger()}catch(_){}},true)}catch(_){}};
 window.addEventListener('message',e=>{try{if(e.origin!==A.TEST_ORIGIN)return;const m=e.data||{};if(m.type==='wfm-transition-media-time'&&Number.isFinite(Number(m.currentTime)))A.transitionMediaTime=Number(m.currentTime)||0;else if(m.type==='wfm-transition-media-ended'){A.videoFinished=true;A.paintOverlay()}}catch(_){}});
 A.overlayTemplate=d=>{
   const root=d.createElement('div');root.id=A.OVERLAY_ID;
