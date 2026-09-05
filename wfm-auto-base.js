@@ -3,7 +3,7 @@
 const A=window.WFMAuto=window.WFMAuto||{};
 A.TEST_ORIGIN='https://svanbergen99.github.io';
 A.TEST_URL='https://svanbergen99.github.io/WFM-TEST/';
-A.OVERLAY_ID='wfm-auto-overlay-v26';
+A.OVERLAY_ID='wfm-auto-overlay-v27';
 A.P=n=>String(n).padStart(2,'0');
 A.sleep=m=>new Promise(r=>setTimeout(r,m));
 A.MM={jan:1,feb:2,mrt:3,mar:3,apr:4,mei:5,may:5,jun:6,jul:7,aug:8,sep:9,okt:10,oct:10,nov:11,dec:12};
@@ -21,12 +21,12 @@ A.overlayTemplate=d=>{
 };
 A.ensureOverlay=()=>{const d=A.targetDoc();if(!d)return null;let root=d.getElementById(A.OVERLAY_ID);if(!root)root=A.overlayTemplate(d);return root};
 A.paintOverlay=()=>{try{
-  try{A.targetDoc()?.getElementById('wfm-auto-starting-v26')?.remove()}catch(_){}
+  try{A.targetDoc()?.getElementById('wfm-auto-starting-v27')?.remove()}catch(_){}
   const root=A.ensureOverlay();if(!root)return;
   const card=root.querySelector('[data-wfm-card]'),state=root.querySelector('[data-wfm-state]'),detail=root.querySelector('[data-wfm-detail]'),progress=root.querySelector('[data-wfm-progress]');
   const processing=A.ui.mode==='processing';
-  root.style.cssText=processing?'position:fixed;inset:0;z-index:2147483647;background:rgba(7,17,31,.985);display:flex;align-items:center;justify-content:center;padding:28px;pointer-events:auto;font-family:Segoe UI,Arial,sans-serif;color:#fff':'position:fixed;top:18px;right:18px;width:min(390px,calc(100vw - 36px));z-index:2147483647;pointer-events:none;font-family:Segoe UI,Arial,sans-serif;color:#fff';
-  card.style.cssText=processing?'width:min(980px,94vw);background:#111827;border:1px solid #334155;border-radius:24px;padding:34px;text-align:center;box-shadow:0 28px 80px rgba(0,0,0,.55)':'background:#111827;border:1px solid #334155;border-radius:16px;padding:16px 18px;text-align:left;box-shadow:0 16px 45px rgba(0,0,0,.42)';
+  root.style.cssText=processing?'position:fixed;inset:0;z-index:2147483647;background:rgba(7,17,31,.985);display:flex;align-items:center;justify-content:center;padding:28px;pointer-events:none;font-family:Segoe UI,Arial,sans-serif;color:#fff':'position:fixed;top:18px;right:18px;width:min(390px,calc(100vw - 36px));z-index:2147483647;pointer-events:none;font-family:Segoe UI,Arial,sans-serif;color:#fff';
+  card.style.cssText=processing?'width:min(980px,94vw);background:#111827;border:1px solid #334155;border-radius:24px;padding:34px;text-align:center;box-shadow:0 28px 80px rgba(0,0,0,.55);pointer-events:none':'background:#111827;border:1px solid #334155;border-radius:16px;padding:16px 18px;text-align:left;box-shadow:0 16px 45px rgba(0,0,0,.42);pointer-events:none';
   const badge=root.querySelector('[data-wfm-badge]');badge.style.cssText='display:inline-block;margin-bottom:10px;padding:5px 9px;border-radius:999px;background:#0f172a;border:1px solid #334155;color:#e2e8f0;font-size:11px;font-weight:900';
   state.textContent=A.ui.text||'';state.style.cssText='font-weight:900;line-height:1.2;color:'+(A.ui.kind==='error'?'#fca5a5':A.ui.kind==='success'?'#86efac':'#fff')+';font-size:'+(processing?'clamp(28px,4vw,48px)':'18px')+';margin-bottom:8px';
   detail.textContent=A.ui.detail||'';detail.style.cssText='color:#cbd5e1;line-height:1.45;font-size:'+(processing?'clamp(14px,1.7vw,19px)':'12px');
@@ -44,7 +44,7 @@ A.removeOverlay=()=>{try{A.targetDoc()?.getElementById(A.OVERLAY_ID)?.remove()}c
 A.announce=()=>{try{A.receiver()?.postMessage({type:'wfm-scanner-helper-ready'},A.TEST_ORIGIN)}catch(_){} };
 A.announce();A.report();A.announceTimer=setInterval(()=>{A.announce();A.report();A.paintOverlay()},500);
 A.visible=(e,w)=>{if(!e||!w)return false;const s=w.getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0};
-A.settingsButton=(w,d)=>{const x=w.innerWidth-23;let found=null;for(let y=45;y<=160;y+=2){const el=d.elementFromPoint(x,y);if(!el)continue;const b=el.closest("button,a,[role='button'],input[type='button']");if(!b)continue;const r=b.getBoundingClientRect();if(r.width>=25&&r.width<=60&&r.height>=25&&r.height<=60&&r.right>w.innerWidth-70){if(!found||r.top>found.getBoundingClientRect().top)found=b}}return found};
+A.settingsButton=(w,d)=>{const x=w.innerWidth-23;let found=null,overlay=d.getElementById(A.OVERLAY_ID),oldPointer=overlay?.style.pointerEvents||'';try{if(overlay)overlay.style.pointerEvents='none';for(let y=45;y<=160;y+=2){const el=d.elementFromPoint(x,y);if(!el||el.closest?.('#'+A.OVERLAY_ID))continue;const b=el.closest("button,a,[role='button'],input[type='button']");if(!b)continue;const r=b.getBoundingClientRect();if(r.width>=25&&r.width<=60&&r.height>=25&&r.height<=60&&r.right>w.innerWidth-70){if(!found||r.top>found.getBoundingClientRect().top)found=b}}}finally{if(overlay)overlay.style.pointerEvents=oldPointer||'none'}return found};
 A.findRadios=(w,d)=>[...d.querySelectorAll('input[type="radio"],[role="radio"]')].filter(r=>{if(!A.visible(r,w))return false;const q=r.getBoundingClientRect();return q.left<w.innerWidth*.5&&q.top>0&&q.bottom<w.innerHeight}).sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top);
 A.findOK=(w,d)=>[...d.querySelectorAll('button,input[type="button"],input[type="submit"],[role="button"]')].filter(e=>A.visible(e,w)).find(e=>/^ok$/i.test(A.txt(e)))||null;
 A.iso=v=>{const m=String(v||'').match(/^(\d{1,2})-([a-zà-ÿ.]+)-(\d{4})$/i);if(!m)return null;const k=m[2].normalize('NFD').replace(/[\u0300-\u036f.]/g,'').toLowerCase().slice(0,3),mo=A.MM[k];return mo?`${m[3]}-${A.P(mo)}-${A.P(m[1])}`:null};
