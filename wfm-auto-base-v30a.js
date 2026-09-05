@@ -4,7 +4,7 @@ const A=window.WFMAuto=window.WFMAuto||{};
 A.TEST_ORIGIN='https://svanbergen99.github.io';
 A.TEST_URL='https://svanbergen99.github.io/WFM-TEST/';
 A.VIDEO_URL=A.TEST_URL+'ff%20wachte.mp4';
-A.OVERLAY_ID='wfm-auto-overlay-v36';
+A.OVERLAY_ID='wfm-auto-overlay-v37';
 A.P=n=>String(n).padStart(2,'0');
 A.sleep=m=>new Promise(r=>setTimeout(r,m));
 A.MM={jan:1,feb:2,mrt:3,mar:3,apr:4,mei:5,may:5,jun:6,jul:7,aug:8,sep:9,okt:10,oct:10,nov:11,dec:12};
@@ -14,14 +14,13 @@ A.target=()=>{try{const t=window.WFMAutoTarget;if(t&&!t.closed)return t;return w
 A.targetDoc=()=>{try{return A.target()?.document||null}catch(_){return null}};
 A.receiver=()=>{try{const t=A.target();return t&&t.opener&&!t.opener.closed?t.opener:null}catch(_){return null}};
 A.txt=e=>String(e?.innerText||e?.textContent||e?.value||'').replace(/\s+/g,' ').trim();
-A.preloadVideo=()=>{try{let v=document.getElementById('wfm-auto-preload-video-v36');if(v)return v;v=document.createElement('video');v.id='wfm-auto-preload-video-v36';v.src=A.VIDEO_URL;v.preload='auto';v.playsInline=true;v.muted=true;v.defaultMuted=true;v.volume=0;v.style.cssText='position:fixed;width:1px;height:1px;left:-20px;top:-20px;opacity:.001;pointer-events:none';(document.body||document.documentElement).appendChild(v);try{v.load()}catch(_){}return v}catch(_){return null}};
 A.coverLoginNow=()=>{try{if(A.loginSubmitted)return;A.loginSubmitted=true;A.loginSubmitAt=Date.now();A.restoreLoginShift();if(!A.transitionPaintTimer)A.transitionPaintTimer=setInterval(()=>A.paintOverlay(),16);A.paintOverlay()}catch(_){}};
-A.armLoginCover=d=>{try{if(!d||d.__wfmAutoLoginCoverV36)return;d.__wfmAutoLoginCoverV36=true;const trigger=()=>A.coverLoginNow();d.addEventListener('submit',e=>{try{const f=e.target;if(f?.querySelector?.('input[type=\"password\"]'))trigger()}catch(_){}},true);d.addEventListener('click',e=>{try{const el=e.target?.closest?.('button,input[type=\"submit\"],input[type=\"button\"],[role=\"button\"]');if(el&&/log\s*in|login|sign\s*in|aanmeld/i.test(A.txt(el)))trigger()}catch(_){}},true)}catch(_){}};
+A.armLoginCover=d=>{try{if(!d||d.__wfmAutoLoginCoverV37)return;d.__wfmAutoLoginCoverV37=true;const trigger=()=>A.coverLoginNow();d.addEventListener('submit',e=>{try{const f=e.target;if(f?.querySelector?.('input[type="password"]'))trigger()}catch(_){}},true);d.addEventListener('click',e=>{try{const el=e.target?.closest?.('button,input[type="submit"],input[type="button"],[role="button"]');if(el&&/log\s*in|login|sign\s*in|aanmeld/i.test(A.txt(el)))trigger()}catch(_){}},true)}catch(_){}};
 window.addEventListener('message',e=>{try{if(e.origin!==A.TEST_ORIGIN)return;const m=e.data||{};if(m.type==='wfm-transition-media-time'&&Number.isFinite(Number(m.currentTime)))A.transitionMediaTime=Number(m.currentTime)||0;else if(m.type==='wfm-transition-media-ended'){A.videoFinished=true;A.paintOverlay()}}catch(_){}});
 A.overlayTemplate=d=>{
   const root=d.createElement('div');root.id=A.OVERLAY_ID;
-  root.innerHTML='<div data-wfm-mask="top"></div><div data-wfm-mask="left"></div><div data-wfm-mask="right"></div><div data-wfm-mask="bottom"></div><div data-wfm-login-frame></div><video data-wfm-video playsinline preload="auto"></video>';
-  const video=root.querySelector('[data-wfm-video]');if(video){video.src=A.VIDEO_URL;video.preload='auto';video.muted=true;video.defaultMuted=true;video.volume=0;video.loop=false;video.playsInline=true;video.addEventListener('ended',()=>{A.videoFinished=true;try{video.pause()}catch(_){}},{once:false});try{video.load()}catch(_){}}
+  root.innerHTML='<div data-wfm-mask="top"></div><div data-wfm-mask="left"></div><div data-wfm-mask="right"></div><div data-wfm-mask="bottom"></div><div data-wfm-login-frame></div><video data-wfm-video playsinline></video>';
+  const video=root.querySelector('[data-wfm-video]');if(video){video.src=A.VIDEO_URL;video.preload='none';video.muted=true;video.defaultMuted=true;video.volume=0;video.loop=false;video.playsInline=true;video.addEventListener('ended',()=>{A.videoFinished=true;try{video.pause()}catch(_){}},{once:false})}
   try{(d.body||d.documentElement).appendChild(root)}catch(_){}
   return root
 };
@@ -80,7 +79,7 @@ A.paintOverlay=()=>{try{
   if(processing||transitionBlack){try{const bg='#000';d.documentElement?.style.setProperty('background',bg,'important');d.body?.style.setProperty('background',bg,'important')}catch(_){}}
   if(showLoginHole)A.centerLoginShift();else A.restoreLoginShift();
   const topMask=root.querySelector('[data-wfm-mask="top"]'),leftMask=root.querySelector('[data-wfm-mask="left"]'),rightMask=root.querySelector('[data-wfm-mask="right"]'),bottomMask=root.querySelector('[data-wfm-mask="bottom"]'),frame=root.querySelector('[data-wfm-login-frame]'),video=root.querySelector('[data-wfm-video]');
-  const maskBg=(transitionBlack||processing)?'#000':'#102a2a';
+  const maskBg=(transitionBlack||processing)?'#000':'#2c1420';
   const blockingBase=`position:fixed;background:${maskBg};pointer-events:auto;margin:0;padding:0;border:0;z-index:1;`;
   const clickThroughBase=`position:fixed;background:${maskBg};pointer-events:none;margin:0;padding:0;border:0;z-index:1;`;
   if(!showLoginHole){
@@ -99,7 +98,7 @@ A.paintOverlay=()=>{try{
   leftMask.style.cssText=guardBase+`left:0;top:${Math.max(0,r.top)}px;width:${Math.max(0,r.left)}px;height:${Math.max(0,r.height)}px;`;
   rightMask.style.cssText=guardBase+`left:${Math.max(0,r.right)}px;right:0;top:${Math.max(0,r.top)}px;height:${Math.max(0,r.height)}px;`;
   const radius=Math.min(64,Math.max(44,r.width*.13));
-  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(237,233,254,.62);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 0 30px rgba(196,181,253,.18),0 18px 52px rgba(0,0,0,.34),0 0 0 9999px #102a2a;pointer-events:none;z-index:2;`;
+  frame.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;background:transparent;border:1px solid rgba(254,205,211,.62);border-radius:${radius}px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 0 30px rgba(251,113,133,.18),0 18px 52px rgba(0,0,0,.34),0 0 0 9999px #2c1420;pointer-events:none;z-index:2;`;
 }catch(_){} };
 A.paintController=()=>{try{const s=document.getElementById('state'),d=document.getElementById('detail');if(s)s.textContent=A.ui.text;if(d)d.textContent=A.ui.detail||''}catch(_){} };
 A.report=()=>{try{A.receiver()?.postMessage({type:'wfm-scanner-status',mode:A.ui.mode,text:A.ui.text,detail:A.ui.detail,kind:A.ui.kind,progress:A.ui.progress},A.TEST_ORIGIN)}catch(_){} };
@@ -109,7 +108,7 @@ A.setState=(text,detail,kind='active')=>{A.ui.text=text||'';A.ui.detail=detail||
 A.setProgress=stage=>{A.ui.progress=stage||null;A.paint();A.report()};
 A.removeOverlay=()=>{try{if(A.transitionPaintTimer){clearInterval(A.transitionPaintTimer);A.transitionPaintTimer=null}A.restoreLoginShift();A.targetDoc()?.getElementById(A.OVERLAY_ID)?.remove()}catch(_){} };
 A.announce=()=>{try{A.receiver()?.postMessage({type:'wfm-scanner-helper-ready'},A.TEST_ORIGIN)}catch(_){} };
-A.preloadVideo();A.announce();A.report();A.announceTimer=setInterval(()=>{A.announce();A.report();A.paintOverlay()},500);
+A.announce();A.report();A.announceTimer=setInterval(()=>{A.announce();A.report();A.paintOverlay()},500);
 A.visible=(e,w)=>{if(!e||!w)return false;const s=w.getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0};
 A.settingsButton=(w,d)=>{const x=w.innerWidth-23;let found=null,overlay=d.getElementById(A.OVERLAY_ID),oldPointer=overlay?.style.pointerEvents||'';try{if(overlay)overlay.style.pointerEvents='none';for(let y=45;y<=160;y+=2){const el=d.elementFromPoint(x,y);if(!el||el.closest?.('#'+A.OVERLAY_ID))continue;const b=el.closest("button,a,[role='button'],input[type='button']");if(!b)continue;const r=b.getBoundingClientRect();if(r.width>=25&&r.width<=60&&r.height>=25&&r.height<=60&&r.right>w.innerWidth-70){if(!found||r.top>found.getBoundingClientRect().top)found=b}}}finally{if(overlay)overlay.style.pointerEvents=oldPointer||'none'}return found};
 A.findRadios=(w,d)=>[...d.querySelectorAll('input[type="radio"],[role="radio"]')].filter(r=>{if(!A.visible(r,w))return false;const q=r.getBoundingClientRect();return q.left<w.innerWidth*.5&&q.top>0&&q.bottom<w.innerHeight}).sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top);
