@@ -1,0 +1,115 @@
+name: Temporary Av32 transition update
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-av32-transition.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply Av32
+        shell: bash
+        run: |
+          set -e
+          python - <<'PY'
+          from pathlib import Path
+
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          if 'TESTVARIANT · Av31' not in s or "data.version==='av31'" not in s:
+              raise SystemExit('Expected Av31 baseline not found in index.html')
+          s=s.replace('Av31','Av32').replace('AV31','AV32').replace('av31','av32')
+          colors={'#0f766e':'#be123c','#14b8a6':'#e11d48','#115e59':'#9f1239','#ccfbf1':'#ffe4e6','#5eead4':'#fda4af','rgba(15,118,110,.25)':'rgba(190,18,60,.25)','rgba(17,94,89,.14)':'rgba(159,18,57,.14)','rgba(20,184,166,.26)':'rgba(225,29,72,.26)','rgba(20,184,166,.32)':'rgba(225,29,72,.32)'}
+          for old,new in colors.items(): s=s.replace(old,new)
+          p.write_text(s,encoding='utf-8')
+
+          p=Path('WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt')
+          s=p.read_text(encoding='utf-8')
+          if 'WFM Scanner Av31' not in s or 'version:"av31"' not in s:
+              raise SystemExit('Expected Av31 bookmarklet baseline not found')
+          s=s.replace('Av31','Av32').replace('AV31','AV32').replace('av31','av32')
+          p.write_text(s,encoding='utf-8')
+
+          p=Path('wfm-auto-base-v30a.js')
+          s=p.read_text(encoding='utf-8')
+          if "A.OVERLAY_ID='wfm-auto-overlay-v31';" not in s:
+              raise SystemExit('Expected Av31 base baseline not found')
+          s=s.replace("A.OVERLAY_ID='wfm-auto-overlay-v31';","A.OVERLAY_ID='wfm-auto-overlay-v32';",1)
+
+          anchor="A.txt=e=>String(e?.innerText||e?.textContent||e?.value||'').replace(/\\s+/g,' ').trim();\n"
+          insert="""A.txt=e=>String(e?.innerText||e?.textContent||e?.value||'').replace(/\\s+/g,' ').trim();
+A.processingMediaActive=false;A.transitionTimer=null;
+A.media=()=>{try{let v=document.getElementById('wfm-auto-media-v32');if(!v){v=document.createElement('video');v.id='wfm-auto-media-v32';v.src=A.VIDEO_URL;v.preload='auto';v.playsInline=true;v.loop=false;v.muted=false;v.defaultMuted=false;v.volume=1;v.style.cssText='position:fixed;width:1px;height:1px;left:-10px;top:-10px;opacity:.001;pointer-events:none';(document.body||document.documentElement).appendChild(v);try{v.load()}catch(_){}}return v}catch(_){return null}};
+A.mediaTime=()=>{try{const v=A.media();return v&&Number.isFinite(v.currentTime)?v.currentTime:0}catch(_){return 0}};
+A.startProcessingMedia=()=>{try{const v=A.media();if(v){if(!A.processingMediaActive){A.processingMediaActive=true;try{v.currentTime=0}catch(_){}}v.muted=false;v.defaultMuted=false;v.volume=1;v.loop=false;if(v.paused&&!v.ended){const p=v.play();p?.catch?.(()=>{})}}if(A.transitionTimer)clearInterval(A.transitionTimer);A.transitionTimer=setInterval(()=>A.paintOverlay(),16);setTimeout(()=>{if(A.transitionTimer){clearInterval(A.transitionTimer);A.transitionTimer=null}},2800)}catch(_){}};
+A.stopProcessingMedia=()=>{try{A.processingMediaActive=false;if(A.transitionTimer){clearInterval(A.transitionTimer);A.transitionTimer=null}const v=document.getElementById('wfm-auto-media-v32');if(v){v.pause();if(v.currentTime)v.currentTime=0}}catch(_){}};
+"""
+          if anchor not in s:
+              raise SystemExit('A.txt anchor not found')
+          s=s.replace(anchor,insert,1)
+
+          old="const video=root.querySelector('[data-wfm-video]');if(video){video.src=A.VIDEO_URL;video.muted=false;video.defaultMuted=false;video.volume=1;video.loop=false;video.playsInline=true;}"
+          new="const video=root.querySelector('[data-wfm-video]');if(video){video.src=A.VIDEO_URL;video.preload='auto';video.muted=true;video.defaultMuted=true;video.volume=0;video.loop=false;video.playsInline=true;try{video.load()}catch(_){}}"
+          if old not in s:
+              raise SystemExit('visual video setup not found')
+          s=s.replace(old,new,1)
+
+          old="if(video){video.style.cssText=processing?'display:block;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(980px,92vw);max-height:calc(100vh - 48px);object-fit:contain;border-radius:24px;background:#000;pointer-events:none;z-index:2':'display:none';if(processing){video.muted=false;video.defaultMuted=false;video.volume=1;if(video.paused&&!video.ended){try{const p=video.play();p?.catch?.(()=>{})}catch(_){}}}else{try{video.pause();if(video.currentTime)video.currentTime=0}catch(_){}}}"
+          new="if(video){video.style.cssText=processing?'display:block;position:fixed;inset:0;width:100vw;height:100vh;max-width:none;max-height:none;object-fit:cover;border-radius:0;background:#000;pointer-events:none;z-index:2':'display:none';if(processing){video.muted=true;video.defaultMuted=true;video.volume=0;const mt=A.mediaTime();try{if(mt>0&&Math.abs(video.currentTime-mt)>.45&&!video.seeking)video.currentTime=mt}catch(_){}if(video.paused&&!video.ended){try{const p=video.play();p?.catch?.(()=>{})}catch(_){}}}else{try{video.pause();if(video.currentTime)video.currentTime=0}catch(_){}}}"
+          if old not in s:
+              raise SystemExit('processing visual video block not found')
+          s=s.replace(old,new,1)
+
+          old="A.setMode=mode=>{A.ui.mode=mode||'login';A.paint();A.report()};"
+          new="A.setMode=mode=>{A.ui.mode=mode||'login';if(A.ui.mode==='processing')A.startProcessingMedia();else A.stopProcessingMedia();A.paint();A.report()};"
+          if old not in s:
+              raise SystemExit('setMode block not found')
+          s=s.replace(old,new,1)
+
+          old="A.removeOverlay=()=>{try{A.restoreLoginShift();A.targetDoc()?.getElementById(A.OVERLAY_ID)?.remove()}catch(_){} };"
+          new="A.removeOverlay=()=>{try{A.stopProcessingMedia();A.restoreLoginShift();A.targetDoc()?.getElementById(A.OVERLAY_ID)?.remove()}catch(_){} };"
+          if old not in s:
+              raise SystemExit('removeOverlay block not found')
+          s=s.replace(old,new,1)
+
+          s=s.replace('background:#2a1038;pointer-events:auto','background:#102a1f;pointer-events:auto',1)
+          s=s.replace('background:#2a1038;pointer-events:none','background:#102a1f;pointer-events:none',1)
+          s=s.replace('0 0 0 9999px #2a1038;pointer-events:none','0 0 0 9999px #102a1f;pointer-events:none',1)
+          s=s.replace('rgba(204,251,241,.62)','rgba(255,228,230,.62)',1)
+          s=s.replace('rgba(94,234,212,.18)','rgba(253,164,175,.18)',1)
+
+          old='A.paint();\n})();'
+          new='try{A.media()}catch(_){}\nA.paint();\n})();'
+          if old not in s:
+              raise SystemExit('final paint anchor not found')
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+
+          node --check wfm-auto-base-v30a.js
+          git diff --check
+          grep -q 'TESTVARIANT · Av32' index.html
+          grep -q "data.version==='av32'" index.html
+          grep -q 'WFM Scanner Av32' WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt
+          grep -q 'version:"av32"' WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt
+          grep -q "A.OVERLAY_ID='wfm-auto-overlay-v32'" wfm-auto-base-v30a.js
+          grep -q "wfm-auto-media-v32" wfm-auto-base-v30a.js
+          grep -q "width:100vw;height:100vh" wfm-auto-base-v30a.js
+          grep -q "object-fit:cover" wfm-auto-base-v30a.js
+          grep -q "A.ui.mode==='processing')A.startProcessingMedia" wfm-auto-base-v30a.js
+          grep -q 'background:#102a1f' wfm-auto-base-v30a.js
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/temp-av32-transition.yml
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' '.github/workflows/temp-av32-transition.yml' 'WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt' 'index.html' 'wfm-auto-base-v30a.js' | sort)"
+          test "$changed" = "$expected"
+          git add index.html WFM-Auto-Login-Scanner-Bookmarklet-v30a.txt wfm-auto-base-v30a.js
+          git commit -m 'Av32: smooth fullscreen video transition with persistent audio'
+          git push origin main
