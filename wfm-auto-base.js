@@ -3,6 +3,7 @@
 const A=window.WFMAuto=window.WFMAuto||{};
 A.TEST_ORIGIN='https://svanbergen99.github.io';
 A.TEST_URL='https://svanbergen99.github.io/WFM-TEST/';
+A.VIDEO_URL=A.TEST_URL+'ff%20wachte.mp4';
 A.OVERLAY_ID='wfm-auto-overlay-v27';
 A.P=n=>String(n).padStart(2,'0');
 A.sleep=m=>new Promise(r=>setTimeout(r,m));
@@ -15,7 +16,8 @@ A.receiver=()=>{try{const t=A.target();return t&&t.opener&&!t.opener.closed?t.op
 A.txt=e=>String(e?.innerText||e?.textContent||e?.value||'').replace(/\s+/g,' ').trim();
 A.overlayTemplate=d=>{
   const root=d.createElement('div');root.id=A.OVERLAY_ID;
-  root.innerHTML='<div data-wfm-card><div data-wfm-badge>⭐ WFM Scanner</div><div data-wfm-state></div><div data-wfm-detail></div><div data-wfm-progress><div data-step="login"><b>1</b><span>Inloggen</span></div><div data-step="six"><b>2</b><span>6 weken laden</span></div><div data-step="scan"><b>3</b><span>Rooster scannen</span></div><div data-step="import"><b>4</b><span>Importeren</span></div></div></div>';
+  root.innerHTML='<div data-wfm-card><video data-wfm-video autoplay muted playsinline preload="auto"></video><div data-wfm-badge>⭐ WFM Scanner</div><div data-wfm-state></div><div data-wfm-detail></div><div data-wfm-progress><div data-step="login"><b>1</b><span>Inloggen</span></div><div data-step="six"><b>2</b><span>6 weken laden</span></div><div data-step="scan"><b>3</b><span>Rooster scannen</span></div><div data-step="import"><b>4</b><span>Importeren</span></div></div></div>';
+  const video=root.querySelector('[data-wfm-video]');if(video){video.src=A.VIDEO_URL;video.muted=true;video.loop=false;video.playsInline=true;}
   try{(d.body||d.documentElement).appendChild(root)}catch(_){}
   return root
 };
@@ -23,14 +25,15 @@ A.ensureOverlay=()=>{const d=A.targetDoc();if(!d)return null;let root=d.getEleme
 A.paintOverlay=()=>{try{
   try{A.targetDoc()?.getElementById('wfm-auto-starting-v27')?.remove()}catch(_){}
   const root=A.ensureOverlay();if(!root)return;
-  const card=root.querySelector('[data-wfm-card]'),state=root.querySelector('[data-wfm-state]'),detail=root.querySelector('[data-wfm-detail]'),progress=root.querySelector('[data-wfm-progress]');
+  const card=root.querySelector('[data-wfm-card]'),video=root.querySelector('[data-wfm-video]'),state=root.querySelector('[data-wfm-state]'),detail=root.querySelector('[data-wfm-detail]'),progress=root.querySelector('[data-wfm-progress]');
   const processing=A.ui.mode==='processing';
   root.style.cssText=processing?'position:fixed;inset:0;z-index:2147483647;background:rgba(7,17,31,.985);display:flex;align-items:center;justify-content:center;padding:28px;pointer-events:none;font-family:Segoe UI,Arial,sans-serif;color:#fff':'position:fixed;top:18px;right:18px;width:min(390px,calc(100vw - 36px));z-index:2147483647;pointer-events:none;font-family:Segoe UI,Arial,sans-serif;color:#fff';
-  card.style.cssText=processing?'width:min(980px,94vw);background:#111827;border:1px solid #334155;border-radius:24px;padding:34px;text-align:center;box-shadow:0 28px 80px rgba(0,0,0,.55);pointer-events:none':'background:#111827;border:1px solid #334155;border-radius:16px;padding:16px 18px;text-align:left;box-shadow:0 16px 45px rgba(0,0,0,.42);pointer-events:none';
-  const badge=root.querySelector('[data-wfm-badge]');badge.style.cssText='display:inline-block;margin-bottom:10px;padding:5px 9px;border-radius:999px;background:#0f172a;border:1px solid #334155;color:#e2e8f0;font-size:11px;font-weight:900';
-  state.textContent=A.ui.text||'';state.style.cssText='font-weight:900;line-height:1.2;color:'+(A.ui.kind==='error'?'#fca5a5':A.ui.kind==='success'?'#86efac':'#fff')+';font-size:'+(processing?'clamp(28px,4vw,48px)':'18px')+';margin-bottom:8px';
-  detail.textContent=A.ui.detail||'';detail.style.cssText='color:#cbd5e1;line-height:1.45;font-size:'+(processing?'clamp(14px,1.7vw,19px)':'12px');
-  progress.style.cssText=processing?'display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:30px':'display:none';
+  card.style.cssText=processing?'width:min(980px,94vw);background:transparent;border:0;border-radius:24px;padding:0;text-align:center;box-shadow:none;pointer-events:none;overflow:hidden':'background:#111827;border:1px solid #334155;border-radius:16px;padding:16px 18px;text-align:left;box-shadow:0 16px 45px rgba(0,0,0,.42);pointer-events:none';
+  if(video){video.style.cssText=processing?'display:block;width:100%;max-height:calc(100vh - 56px);object-fit:contain;border-radius:24px;background:#000;pointer-events:none':'display:none';if(processing){if(video.paused&&!video.ended){try{const p=video.play();p?.catch?.(()=>{})}catch(_){}}}else{try{video.pause();if(video.currentTime)video.currentTime=0}catch(_){}}}
+  const badge=root.querySelector('[data-wfm-badge]');badge.style.cssText=processing?'display:none':'display:inline-block;margin-bottom:10px;padding:5px 9px;border-radius:999px;background:#0f172a;border:1px solid #334155;color:#e2e8f0;font-size:11px;font-weight:900';
+  state.textContent=A.ui.text||'';state.style.cssText=processing?'display:none':'display:block;font-weight:900;line-height:1.2;color:'+(A.ui.kind==='error'?'#fca5a5':A.ui.kind==='success'?'#86efac':'#fff')+';font-size:18px;margin-bottom:8px';
+  detail.textContent=A.ui.detail||'';detail.style.cssText=processing?'display:none':'display:block;color:#cbd5e1;line-height:1.45;font-size:12px';
+  progress.style.cssText='display:none';
   const order=['login','six','scan','import'],idx=A.ui.progress==='done'?order.length:order.indexOf(A.ui.progress);
   for(const el of progress.querySelectorAll('[data-step]')){const i=order.indexOf(el.dataset.step),done=idx===order.length||i<idx,current=i===idx;el.style.cssText='padding:18px 10px;border-radius:14px;border:1px solid '+(done?'#22c55e':current?'#fbbf24':'#334155')+';background:#0f172a;color:'+(done?'#dcfce7':current?'#fff':'#94a3b8')+';font-weight:800;text-align:center';const b=el.querySelector('b');b.textContent=done?'✓':String(i+1);b.style.cssText='display:grid;place-items:center;width:34px;height:34px;margin:0 auto 9px;border-radius:50%;background:'+(done?'#22c55e':current?'#fbbf24':'#334155')+';color:'+(done?'#052e16':current?'#111827':'#fff')+';font-size:18px';}
 }catch(_){} };
