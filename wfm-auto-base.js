@@ -16,8 +16,8 @@ A.receiver=()=>{try{const t=A.target();return t&&t.opener&&!t.opener.closed?t.op
 A.txt=e=>String(e?.innerText||e?.textContent||e?.value||'').replace(/\s+/g,' ').trim();
 A.overlayTemplate=d=>{
   const root=d.createElement('div');root.id=A.OVERLAY_ID;
-  root.innerHTML='<div data-wfm-card><video data-wfm-video autoplay muted playsinline preload="auto"></video><div data-wfm-badge>⭐ WFM Scanner</div><div data-wfm-state></div><div data-wfm-detail></div><div data-wfm-progress><div data-step="login"><b>1</b><span>Inloggen</span></div><div data-step="six"><b>2</b><span>6 weken laden</span></div><div data-step="scan"><b>3</b><span>Rooster scannen</span></div><div data-step="import"><b>4</b><span>Importeren</span></div></div></div>';
-  const video=root.querySelector('[data-wfm-video]');if(video){video.src=A.VIDEO_URL;video.muted=true;video.loop=false;video.playsInline=true;}
+  root.innerHTML='<div data-wfm-card><video data-wfm-video playsinline preload="auto"></video><div data-wfm-badge>⭐ WFM Scanner</div><div data-wfm-state></div><div data-wfm-detail></div><div data-wfm-progress><div data-step="login"><b>1</b><span>Inloggen</span></div><div data-step="six"><b>2</b><span>6 weken laden</span></div><div data-step="scan"><b>3</b><span>Rooster scannen</span></div><div data-step="import"><b>4</b><span>Importeren</span></div></div></div>';
+  const video=root.querySelector('[data-wfm-video]');if(video){video.src=A.VIDEO_URL;video.muted=false;video.defaultMuted=false;video.volume=1;video.loop=false;video.playsInline=true;}
   try{(d.body||d.documentElement).appendChild(root)}catch(_){}
   return root
 };
@@ -29,7 +29,7 @@ A.paintOverlay=()=>{try{
   const processing=A.ui.mode==='processing';
   root.style.cssText=processing?'position:fixed;inset:0;z-index:2147483647;background:rgba(7,17,31,.985);display:flex;align-items:center;justify-content:center;padding:28px;pointer-events:none;font-family:Segoe UI,Arial,sans-serif;color:#fff':'position:fixed;top:18px;right:18px;width:min(390px,calc(100vw - 36px));z-index:2147483647;pointer-events:none;font-family:Segoe UI,Arial,sans-serif;color:#fff';
   card.style.cssText=processing?'width:min(980px,94vw);background:transparent;border:0;border-radius:24px;padding:0;text-align:center;box-shadow:none;pointer-events:none;overflow:hidden':'background:#111827;border:1px solid #334155;border-radius:16px;padding:16px 18px;text-align:left;box-shadow:0 16px 45px rgba(0,0,0,.42);pointer-events:none';
-  if(video){video.style.cssText=processing?'display:block;width:100%;max-height:calc(100vh - 56px);object-fit:contain;border-radius:24px;background:#000;pointer-events:none':'display:none';if(processing){if(video.paused&&!video.ended){try{const p=video.play();p?.catch?.(()=>{})}catch(_){}}}else{try{video.pause();if(video.currentTime)video.currentTime=0}catch(_){}}}
+  if(video){video.style.cssText=processing?'display:block;width:100%;max-height:calc(100vh - 56px);object-fit:contain;border-radius:24px;background:#000;pointer-events:none':'display:none';if(processing){video.muted=false;video.defaultMuted=false;video.volume=1;if(video.paused&&!video.ended){try{const p=video.play();p?.catch?.(()=>{})}catch(_){}}}else{try{video.pause();if(video.currentTime)video.currentTime=0}catch(_){}}}
   const badge=root.querySelector('[data-wfm-badge]');badge.style.cssText=processing?'display:none':'display:inline-block;margin-bottom:10px;padding:5px 9px;border-radius:999px;background:#0f172a;border:1px solid #334155;color:#e2e8f0;font-size:11px;font-weight:900';
   state.textContent=A.ui.text||'';state.style.cssText=processing?'display:none':'display:block;font-weight:900;line-height:1.2;color:'+(A.ui.kind==='error'?'#fca5a5':A.ui.kind==='success'?'#86efac':'#fff')+';font-size:18px;margin-bottom:8px';
   detail.textContent=A.ui.detail||'';detail.style.cssText=processing?'display:none':'display:block;color:#cbd5e1;line-height:1.45;font-size:12px';
