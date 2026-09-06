@@ -1,1 +1,62 @@
-javascript:(()=>{"use strict";const O="https://svanbergen99.github.io",U="https://svanbergen99.github.io/WFM-TEST/wfm-scanner-popup.html",WRAP="__wfmScannerFloatingWrap",FRAME="__wfmScannerFloatingFrame";document.getElementById(WRAP)?.remove();const wrap=document.createElement("div");wrap.id=WRAP;wrap.style.cssText="position:fixed;inset:0;z-index:2147483646;pointer-events:none";const box=document.createElement("div");box.style.cssText="position:fixed;right:18px;bottom:18px;width:380px;height:315px;pointer-events:auto";const frame=document.createElement("iframe");frame.id=FRAME;frame.src=U+"?v="+Date.now();frame.title="WFM Scanner";frame.style.cssText="width:100%;height:100%;border:0;background:transparent";frame.setAttribute("allow","clipboard-read; clipboard-write");box.appendChild(frame);wrap.appendChild(box);document.documentElement.appendChild(wrap);const old=window.__WFM_SCANNER_POPUP_HANDLER__;if(old)window.removeEventListener("message",old);const h=e=>{if(e.origin!==O||e.source!==frame.contentWindow)return;const d=e.data||{};if(d.type==="wfm-popup-close-panel"){wrap.remove();window.removeEventListener("message",h);return}if(d.type==="wfm-popup-run-scanner"&&typeof d.code==="string"&&d.code.startsWith("javascript:")){try{frame.contentWindow.postMessage({type:"wfm-popup-status",status:"running",text:"Huidige WFM-pagina wordt gescand..."},O);(0,eval)(d.code.slice(11))}catch(err){try{frame.contentWindow.postMessage({type:"wfm-popup-status",status:"error",text:err?.message||String(err)},O)}catch(_){}}}};window.__WFM_SCANNER_POPUP_HANDLER__=h;window.addEventListener("message",h);const ping=()=>{try{frame.contentWindow?.postMessage({type:"wfm-popup-connected",title:document.title},O)}catch(_){}};frame.addEventListener("load",()=>{setTimeout(ping,80);setTimeout(ping,350)});setTimeout(ping,700)})()
+javascript:(()=>{
+'use strict';
+const O='https://svanbergen99.github.io',U='https://svanbergen99.github.io/WFM-TEST/wfm-scanner-popup.html',WRAP='__wfmScannerFloatingWrap',FRAME='__wfmScannerFloatingFrame';
+document.getElementById(WRAP)?.remove();
+const wrap=document.createElement('div');wrap.id=WRAP;wrap.style.cssText='position:fixed;inset:0;z-index:2147483646;pointer-events:none';
+const box=document.createElement('div');box.style.cssText='position:fixed;right:18px;bottom:18px;width:380px;height:430px;pointer-events:auto';
+const frame=document.createElement('iframe');frame.id=FRAME;frame.src=U+'?v='+Date.now();frame.title='WFM Scanner';frame.style.cssText='width:100%;height:100%;border:0;background:transparent';
+box.appendChild(frame);wrap.appendChild(box);document.documentElement.appendChild(wrap);
+const sleep=m=>new Promise(r=>setTimeout(r,m));
+const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+const visible=e=>{if(!e||e.closest?.('#'+WRAP))return false;const s=getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0};
+const label=e=>norm([e.innerText,e.textContent,e.value,e.getAttribute?.('aria-label'),e.getAttribute?.('title'),e.id,e.className].filter(Boolean).join(' '));
+function clickBy(labels){
+  const wanted=labels.map(norm),selectors='button,a,[role="button"],[role="tab"],[role="menuitem"],input[type="button"],input[type="submit"],[onclick]';
+  let best=null,bestScore=-1;
+  for(const e of document.querySelectorAll(selectors)){
+    if(!visible(e))continue;const t=label(e);let score=-1;
+    for(const w of wanted){if(!w)continue;if(t===w)score=Math.max(score,100);else if(t.startsWith(w)||t.endsWith(w))score=Math.max(score,80);else if(t.includes(w))score=Math.max(score,60)}
+    if(score>bestScore){best=e;bestScore=score}
+  }
+  if(!best){
+    for(const e of document.querySelectorAll('span,div,td,li')){
+      if(!visible(e))continue;const t=norm(e.textContent);if(!wanted.some(w=>t===w||t.includes(w)))continue;const c=e.closest(selectors);if(c&&visible(c)){best=c;break}
+    }
+  }
+  if(!best)return false;best.click();return true
+}
+async function waitClick(labels,timeout=2800){const start=performance.now();do{if(clickBy(labels))return true;await sleep(120)}while(performance.now()-start<timeout);return false}
+function post(status,text){try{frame.contentWindow?.postMessage({type:'wfm-popup-status',status,text},O)}catch(_){} }
+async function openMy(){if(!await waitClick(['My Schedule','MySchedule']))throw new Error('My Schedule niet gevonden op de WFM-pagina.');await sleep(250);return'My Schedule geopend.'}
+async function openOther(){if(await waitClick(['Other Schedules','Other Schedule'],700)){await sleep(250);return'Other Schedules geopend.'}await openMy();if(!await waitClick(['Other Schedules','Other Schedule'],3200))throw new Error('Other Schedules niet gevonden nadat My Schedule is geopend.');await sleep(300);return'Other Schedules geopend.'}
+function amsterdamToday(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),g=t=>p.find(x=>x.type===t)?.value||'';return{iso:`${g('year')}-${g('month')}-${g('day')}`,year:+g('year'),month:+g('month'),day:+g('day')}}
+function todayCandidate(){
+  const t=amsterdamToday(),iso=t.iso,day=String(t.day),monthNames=['january','february','march','april','may','june','july','august','september','october','november','december','januari','februari','maart','mei','juni','juli','augustus','oktober','december'];
+  const direct=[`[data-date="${iso}"]`,`[data-value="${iso}"]`,`[value="${iso}"]`,`[aria-current="date"]`,'.ui-datepicker-today a','.today a','.today button','td.today','button.today'];
+  for(const s of direct){try{for(const e of document.querySelectorAll(s)){if(visible(e))return e}}catch(_){} }
+  const candidates=[...document.querySelectorAll('button,a,[role="button"],[role="gridcell"],td,span,div')].filter(visible);
+  let best=null,bestScore=-1;
+  for(const e of candidates){const a=norm([e.getAttribute?.('aria-label'),e.getAttribute?.('title'),e.getAttribute?.('data-date'),e.getAttribute?.('data-value'),e.textContent].filter(Boolean).join(' '));let score=-1;
+    if(a.includes(iso))score=100;
+    if((a==='today'||a==='vandaag'||a.includes(' today')||a.includes('vandaag'))&&score<90)score=90;
+    if(a===day&&score<30)score=30;
+    if(a.includes(String(t.year))&&a.includes(day)&&monthNames.some(m=>a.includes(m))&&score<80)score=80;
+    if(score>bestScore){best=e;bestScore=score}
+  }
+  return bestScore>=30?best:null
+}
+async function calendarToday(){
+  let opened=await waitClick(['Calendar','Kalender'],800);
+  if(!opened){await openOther();opened=await waitClick(['Calendar','Kalender'],3200)}
+  if(!opened)throw new Error('Calendar-knop niet gevonden op de WFM-pagina.');
+  await sleep(350);
+  const start=performance.now();let target=null;while(performance.now()-start<3500){target=todayCandidate();if(target)break;await sleep(120)}
+  if(!target)throw new Error('De datum van vandaag kon niet in de geopende kalender worden herkend.');
+  const clickable=target.closest?.('button,a,[role="button"],[role="gridcell"]')||target;clickable.click();await sleep(250);return'Calendar geopend en vandaag geselecteerd.'
+}
+async function runCommand(command){post('running',command==='my-schedule'?'My Schedule openen…':command==='other-schedules'?'Other Schedules openen…':'Calendar openen en vandaag selecteren…');try{let text='';if(command==='my-schedule')text=await openMy();else if(command==='other-schedules')text=await openOther();else if(command==='calendar-today')text=await calendarToday();else throw new Error('Onbekende scanneractie.');post('ready',text)}catch(e){post('error',e?.message||String(e))}}
+const old=window.__WFM_SCANNER_POPUP_HANDLER__;if(old)window.removeEventListener('message',old);
+const h=e=>{if(e.origin!==O||e.source!==frame.contentWindow)return;const d=e.data||{};if(d.type==='wfm-popup-close-panel'){wrap.remove();window.removeEventListener('message',h);return}if(d.type==='wfm-popup-command'){runCommand(d.command);return}if(d.type==='wfm-popup-run-scanner'&&typeof d.code==='string'&&d.code.startsWith('javascript:')){try{post('running','Huidige WFM-pagina wordt gescand...');(0,eval)(d.code.slice(11))}catch(err){post('error',err?.message||String(err))}}};
+window.__WFM_SCANNER_POPUP_HANDLER__=h;window.addEventListener('message',h);
+const ping=()=>{try{frame.contentWindow?.postMessage({type:'wfm-popup-connected',title:document.title},O)}catch(_){} };frame.addEventListener('load',()=>{setTimeout(ping,80);setTimeout(ping,350)});setTimeout(ping,700)
+})()
