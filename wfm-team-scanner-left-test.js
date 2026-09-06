@@ -1,8 +1,8 @@
 (async()=>{'use strict';try{
-  const load=async url=>{const r=await fetch(url+(url.includes('?')?'&':'?')+'v='+Date.now());if(!r.ok)throw Error('HTTP '+r.status+' '+url);await (0,eval)(await r.text())};
+  const load=async url=>{const r=await fetch(url+(url.includes('?')?'&':'?')+'v='+Date.now());if(!r.ok)throw Error('HTTP '+r.status+' '+url);const result=(0,eval)(await r.text());if(result&&typeof result.then==='function')await result;return result};
   await load('https://raw.githubusercontent.com/svanbergen99/WFM-TEST/main/wfm-calendar-click-test-bottom.js');
   await load('https://raw.githubusercontent.com/svanbergen99/WFM-TEST/main/wfm-other-schedules-scan-engine.js');
-  const root=document.getElementById('rh-team-scanner-test');if(!root)throw Error('Team Scanner overlay niet gevonden');
+  let root=null;for(let i=0;i<40&&!root;i++){root=document.getElementById('rh-team-scanner-test');if(!root)await new Promise(r=>setTimeout(r,100))}if(!root)throw Error('Team Scanner overlay niet gevonden na volledig laden');
   document.getElementById('rh-left-scan-test-style')?.remove();
   const style=document.createElement('style');style.id='rh-left-scan-test-style';style.textContent='#rh-team-scanner-test .debug{display:none!important}#rh-debug-dot{display:none!important}#rh-team-scanner-test .scan-status{margin:8px 0;padding:8px;background:#eef3f8;border-radius:6px;font-size:11px;line-height:1.45;color:#334155;white-space:pre-wrap;max-height:120px;overflow:auto}';document.documentElement.appendChild(style);document.getElementById('rh-debug-dot')?.remove();
   const left=root.querySelector('.p.l');if(!left)throw Error('Linker Team Scanner overlay niet gevonden');
