@@ -4,52 +4,44 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>WFM Secure Scan Relay</title>
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0f172a;color:#fff;font:16px Arial,sans-serif}.box{width:min(560px,calc(100% - 32px));padding:28px;border-radius:18px;background:#172033;text-align:center;box-shadow:0 20px 55px #0006}.muted{color:#cbd5e1;font-size:13px;line-height:1.5}.ok{color:#86efac}.bad{color:#fca5a5}</style>
+<style>html,body{margin:0;min-height:100%;background:#0f172a;font:15px Arial,sans-serif}body{min-height:100vh;display:grid;grid-template-rows:auto 1fr}.bar{padding:10px 14px;background:#111827;color:#cbd5e1;font-weight:800}.bar.ok{color:#86efac}.bar.bad{color:#fca5a5}iframe{width:100%;height:100%;min-height:calc(100vh - 42px);border:0;background:#f3f5f8}</style>
 </head>
 <body>
-<div class="box"><h1>Roosterscan beveiligen</h1><p id="status" class="muted">Wachten op de WFM-scan…</p></div>
+<div id="status" class="bar">Wachten op een WFM-scan…</div>
+<iframe id="bridgeFrame" src="https://svanbergen99.github.io/Roosteroverzicht/rooster-scan-bridge.html" title="Beveiligde roosterscan bridge"></iframe>
 <script>
 (() => {
   'use strict';
   const PUBLIC_ORIGIN='https://svanbergen99.github.io';
   const WFM_ORIGIN='https://genesyswfm.hosting.corp';
-  const BRIDGE_URL='https://svanbergen99.github.io/Roosteroverzicht/rooster-scan-bridge.html';
-  const BRIDGE_NAME='roosterSecureScanBridge';
   const status=document.getElementById('status');
-  let scanSource=null;
-  let bridge=null;
+  const frame=document.getElementById('bridgeFrame');
   let payload=null;
-  let tries=0;
   let timer=0;
+  let tries=0;
 
-  function text(value,kind=''){status.className=`muted${kind?` ${kind}`:''}`;status.textContent=value}
-  function ensureBridge(){
-    try{bridge=window.open('',BRIDGE_NAME)}catch(_){bridge=null}
-    if(!bridge)throw new Error('De beveiligde Roosteroverzicht-bridge kon niet worden geopend. Sta popups toe.');
-    try{if(!bridge.location.href||bridge.location.href==='about:blank')bridge.location.href=BRIDGE_URL}catch(_){try{bridge=window.open(BRIDGE_URL,BRIDGE_NAME)}catch(__){}}
-    return bridge
-  }
+  function text(value,kind=''){status.className=`bar${kind?` ${kind}`:''}`;status.textContent=value}
   function forward(){
     if(!payload)return;
-    try{ensureBridge()}catch(e){text(e.message,'bad');return}
-    tries=0;clearInterval(timer);
+    clearInterval(timer);tries=0;
     const send=()=>{
       tries++;
-      try{bridge.postMessage({type:'secure-roster-scan',relay:'wfm-secure-scan-relay-v1',payload},PUBLIC_ORIGIN)}catch(_){}
-      if(tries>=24){clearInterval(timer);text('De scan is ontvangen, maar de beveiligde bridge gaf nog geen bevestiging. Laat deze pagina open en controleer de bridge.','bad')}
+      try{frame.contentWindow?.postMessage({type:'secure-roster-scan',relay:'wfm-secure-scan-relay-v1',payload},PUBLIC_ORIGIN)}catch(_){}
+      if(tries>=40){clearInterval(timer);text('De scan is ontvangen, maar de beveiligde bridge gaf nog geen bevestiging. Laat dit venster open.','bad')}
     };
     send();timer=setInterval(send,250)
   }
+  frame.addEventListener('load',()=>{if(payload)forward()});
   window.addEventListener('message',event=>{
     const data=event.data||{};
     if(event.origin===WFM_ORIGIN&&data.type==='wfm-live-scan'&&Array.isArray(data?.payload?.schedules)){
-      scanSource=event.source;payload=data.payload;text('WFM-scan ontvangen. Doorsturen naar de beveiligde bridge…');
-      try{scanSource?.postMessage({type:'wfm-live-ack',receivedAt:new Date().toISOString()},WFM_ORIGIN)}catch(_){}
+      payload=data.payload;text('WFM-scan ontvangen. Doorsturen naar de beveiligde bridge…');
+      try{event.source?.postMessage({type:'wfm-live-ack',receivedAt:new Date().toISOString()},WFM_ORIGIN)}catch(_){}
       forward();return
     }
-    if(event.origin===PUBLIC_ORIGIN&&data.type==='secure-roster-scan-ack'){
+    if(event.origin===PUBLIC_ORIGIN&&event.source===frame.contentWindow&&data.type==='secure-roster-scan-ack'){
       clearInterval(timer);text('Scan veilig bij de Roosteroverzicht-bridge afgeleverd.','ok');
-      setTimeout(()=>{try{window.close()}catch(_){}},550)
+      try{window.focus()}catch(_){}
     }
   });
 })();
