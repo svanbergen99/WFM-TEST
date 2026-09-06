@@ -13,8 +13,8 @@
 <div class="card">
   <div class="head"><span id="dot" class="dot"></span><h1>WFM Scanner</h1></div>
   <p class="sub">Dit paneel blijft staan. Je kunt ondertussen gewoon in WFM achter het paneel blijven klikken en handmatig van pagina/week wisselen.</p>
-  <div class="team">Scannerpaneel actief</div>
-  <button id="scan" class="btn" type="button" disabled>Rooster ophalen</button>
+  <div class="team">Handmatige weekscan</div>
+  <button id="scan" class="btn" type="button" disabled>Deze pagina scannen</button>
   <div id="status" class="status">Wachten op verbinding met WFM…</div>
   <button id="close" class="close" type="button">Scannerpaneel sluiten</button>
 </div>
@@ -31,26 +31,26 @@ window.addEventListener('message',e=>{
   if(host()&&e.source!==host())return;
   const d=e.data||{};
   if(d.type==='wfm-popup-connected'){
-    connected=true;running=false;scan.disabled=false;scan.textContent='Rooster ophalen';setState('ok','Verbonden met WFM. Je kunt nu in WFM blijven navigeren en daarna scannen.');
+    connected=true;running=false;scan.disabled=false;scan.textContent='Deze pagina scannen';setState('ok','Verbonden. Navigeer in WFM naar de gewenste week/pagina en klik daarna op scannen.');
   }
   if(d.type==='wfm-popup-status'){
     if(d.status==='running'){running=true;scan.disabled=true;scan.textContent='Bezig met scannen…';setState('busy',d.text||'Scanner gestart in WFM…')}
-    else if(d.status==='error'){running=false;scan.disabled=false;scan.textContent='Rooster ophalen';setState('bad',d.text||'Scanner kon niet starten.')}
-    else if(d.status==='ready'){running=false;scan.disabled=false;scan.textContent='Rooster ophalen';setState('ok',d.text||'Klaar voor de volgende scan.')}
+    else if(d.status==='error'){running=false;scan.disabled=false;scan.textContent='Deze pagina scannen';setState('bad',d.text||'Scanner kon niet starten.')}
+    else if(d.status==='ready'){running=false;scan.disabled=false;scan.textContent='Deze pagina scannen';setState('ok',d.text||'Klaar voor de volgende scan.')}
   }
 });
 async function startScan(){
   if(!connected||running)return;
   running=true;scan.disabled=true;scan.textContent='Bezig met scannen…';setState('busy','Scanner-code laden…');
   try{
-    const r=await fetch('WFM-Planning-Scan-Secure-Bookmarklet.txt?v='+Date.now(),{cache:'no-store'});
+    const r=await fetch('WFM-Planning-Scan-Current-Secure-Bookmarklet.txt?v='+Date.now(),{cache:'no-store'});
     if(!r.ok)throw new Error('Scanner-code kon niet worden geladen.');
     const code=(await r.text()).trim();
     if(!code.startsWith('javascript:'))throw new Error('Ongeldige scanner-code ontvangen.');
     const target=host();if(!target)throw new Error('Het WFM-venster is niet meer beschikbaar.');
     target.postMessage({type:'wfm-popup-run-scanner',code},WFM_ORIGIN);
-    setState('busy','Opdracht naar WFM gestuurd.');
-  }catch(err){running=false;scan.disabled=false;scan.textContent='Rooster ophalen';setState('bad',err?.message||String(err))}
+    setState('busy','Huidige WFM-weergave wordt verwerkt…');
+  }catch(err){running=false;scan.disabled=false;scan.textContent='Deze pagina scannen';setState('bad',err?.message||String(err))}
 }
 scan.addEventListener('click',startScan);
 closeBtn.addEventListener('click',()=>{try{host()?.postMessage({type:'wfm-popup-close-panel'},WFM_ORIGIN)}catch(_){};if(window.opener)window.close()});
