@@ -1,5 +1,5 @@
 (async()=>{'use strict';try{
-  const load=async url=>{const r=await fetch(url+(url.includes('?')?'&':'?')+'v='+Date.now());if(!r.ok)throw Error('HTTP '+r.status+' '+url);(0,eval)(await r.text())};
+  const load=async url=>{const r=await fetch(url+(url.includes('?')?'&':'?')+'v='+Date.now());if(!r.ok)throw Error('HTTP '+r.status+' '+url);await (0,eval)(await r.text())};
   await load('https://raw.githubusercontent.com/svanbergen99/WFM-TEST/main/wfm-calendar-click-test-bottom.js');
   await load('https://raw.githubusercontent.com/svanbergen99/WFM-TEST/main/wfm-other-schedules-scan-engine.js');
   const root=document.getElementById('rh-team-scanner-test');if(!root)throw Error('Team Scanner overlay niet gevonden');
