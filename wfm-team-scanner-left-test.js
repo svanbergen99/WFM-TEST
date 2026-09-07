@@ -16,7 +16,7 @@
   document.getElementById('rh-left-scan-test-style')?.remove();
   const style=document.createElement('style');
   style.id='rh-left-scan-test-style';
-  style.textContent='#rh-team-scanner-test .debug{display:none!important}#rh-debug-dot{display:none!important}#rh-team-scanner-test .scan-status{margin:8px 0;padding:8px;background:#eef3f8;border-radius:6px;font-size:11px;line-height:1.45;color:#334155;white-space:pre-wrap;max-height:135px;overflow:auto}#rh-team-scanner-test .rh-secure-field{margin-top:7px}#rh-team-scanner-test .rh-secure-field input{box-sizing:border-box;width:100%;height:36px;padding:6px 8px;border:1px solid #d4dce6;border-radius:7px;background:#fff;font:12px Segoe UI,Arial,sans-serif}#rh-team-scanner-test .rh-secure-note{margin-top:6px;font-size:10px;line-height:1.35;color:#64748b}';
+  style.textContent='#rh-team-scanner-test .debug{display:none!important}#rh-debug-dot{display:none!important}#rh-team-scanner-test .scan-status{margin:8px 0;padding:8px;background:#eef3f8;border-radius:6px;font-size:11px;line-height:1.45;color:#334155;white-space:pre-wrap;max-height:135px;overflow:auto}#rh-team-scanner-test .rh-secure-field{margin-top:7px}#rh-team-scanner-test .rh-secure-field input{box-sizing:border-box;width:100%;height:36px;padding:6px 8px;border:1px solid #d4dce6;border-radius:7px;background:#fff;font:12px Segoe UI,Arial,sans-serif}#rh-team-scanner-test .rh-secure-note{margin-top:6px;font-size:10px;line-height:1.35;color:#64748b}#rh-team-scanner-test .rh-repo-mode{margin:0 0 7px;padding:6px 8px;border-radius:6px;background:#e8f5ee;color:#176b58;font-size:10px;font-weight:800;text-align:center}';
   document.documentElement.appendChild(style);
   document.getElementById('rh-debug-dot')?.remove();
 
@@ -24,7 +24,7 @@
   if(!left)throw Error('Linker Team Scanner overlay niet gevonden');
   let body=left.querySelector('.b');
   if(!body){body=document.createElement('div');body.className='b';left.appendChild(body)}
-  body.innerHTML='<button class="rh-scan-now" type="button">Scan Other Schedules</button><div class="rh-scan-count" style="padding:10px;text-align:center">Scan\'s gemaakt &lt;0&gt;</div><div class="rh-secure-field"><input class="rh-team-id" type="text" autocomplete="off" spellcheck="false" placeholder="Team-ID"></div><div class="rh-secure-field"><input class="rh-team-password" type="password" autocomplete="new-password" placeholder="Team Wachtwoord"></div><div class="rh-secure-field"><input class="rh-github-token" type="password" autocomplete="new-password" placeholder="GitHub fine-grained PAT"></div><div class="rh-secure-note">Team-ID, wachtwoord en GitHub-token blijven alleen in deze geopende WFM-pagina. De scan wordt eerst AES-GCM versleuteld en daarna rechtstreeks naar Roosteroverzicht/main gestuurd.</div><button class="rh-download-now" type="button">Beveiligd opslaan in repo</button><div class="scan-status"></div>';
+  body.innerHTML='<div class="rh-repo-mode">REPO-MODUS ACTIEF — geen lokale download</div><button class="rh-scan-now" type="button">Scan Other Schedules</button><div class="rh-scan-count" style="padding:10px;text-align:center">Scan\'s gemaakt &lt;0&gt;</div><div class="rh-secure-field"><input class="rh-team-id" type="text" autocomplete="off" spellcheck="false" placeholder="Team-ID"></div><div class="rh-secure-field"><input class="rh-team-password" type="password" autocomplete="new-password" placeholder="Team Wachtwoord"></div><div class="rh-secure-field"><input class="rh-github-token" type="password" autocomplete="new-password" placeholder="GitHub fine-grained PAT"></div><div class="rh-secure-note">Team-ID, wachtwoord en GitHub-token blijven alleen in deze geopende WFM-pagina. De scan wordt eerst AES-GCM versleuteld en daarna rechtstreeks naar Roosteroverzicht/main gestuurd.</div><button class="rh-download-now" type="button">Beveiligd naar repo sturen</button><div class="scan-status"></div>';
 
   const scanBtn=body.querySelector('.rh-scan-now');
   const sendBtn=body.querySelector('.rh-download-now');
@@ -67,7 +67,7 @@
     countEl.textContent=`Scan's gemaakt <${window.__rhTeamScannerScanCount}>`;
     scanBtn.disabled=false;
     sendBtn.disabled=!hasData();
-    if(hasData())try{sendBtn.textContent='Stuur '+targetFor(currentIndex()).filename+' naar repo'}catch{sendBtn.textContent='Beveiligd opslaan in repo'}
+    if(hasData())try{sendBtn.textContent='Stuur '+targetFor(currentIndex()).filename+' naar repo'}catch{sendBtn.textContent='Beveiligd naar repo sturen'}
   };
   refresh();
   status.textContent=hasData()?'Scans staan klaar. Vul Team-ID, Team Wachtwoord en GitHub PAT in en stuur beveiligd naar de repo.':'Scanner klaar. De rechter navigatie loopt automatisch; daarna kun je scannen.';
